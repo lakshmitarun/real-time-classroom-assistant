@@ -1,0 +1,784 @@
+/* ========================================
+   TRANSLATION TEST PANEL - REDESIGNED
+   Modern, Clean, Professional Interface
+   ======================================== */
+
+/* ========================================
+   BASE STYLES & GLOBAL CONTAINER
+   ======================================== */
+.translation-test {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.content-wrapper {
+  padding: 0 0 40px 0;
+}
+
+/* ========================================
+   1. TOP HEADER (STICKY)
+   ======================================== */
+.test-header {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 20px 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  margin-bottom: 40px;
+  transition: box-shadow 0.3s ease;
+}
+
+.test-header.scrolled {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.test-header h1 {
+  font-size: 26px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* ========================================
+   BUTTON SYSTEM
+   ======================================== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+  font-weight: 700;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.btn-icon:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   CARD SYSTEM (WHITE BOXES)
+   ======================================== */
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 32px rgba(0, 0, 0, 0.1);
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 20px 0;
+  letter-spacing: -0.3px;
+}
+
+/* ========================================
+   2. SOURCE LANGUAGE SELECTOR
+   ======================================== */
+
+
+.language-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lang-btn {
+  flex: 1;
+  min-width: 150px;
+  padding: 14px 24px;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none;
+}
+
+.lang-btn::before {
+  content: '✓';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.lang-btn:hover:not(.active) {
+  background: #f1f5f9;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.lang-btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+.lang-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.35);
+  padding-left: 36px;
+}
+
+.lang-btn.active::before {
+  opacity: 1;
+  transform: translateY(-50%) scale(1);
+}
+
+/* ========================================
+   3. INPUT PANEL (MOST IMPORTANT)
+   ======================================== */
+
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+/* TEXTAREA - MOST IMPORTANT ELEMENT */
+.input-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 140px;
+  max-height: 400px;
+  transition: all 0.2s ease;
+  background: #f9fafb;
+  color: #1e293b;
+}
+
+.input-textarea::placeholder {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.input-textarea:hover {
+  border-color: #cbd5e0;
+  background: #ffffff;
+}
+
+.input-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* ERROR & SUCCESS MESSAGES */
+.error-message {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #dc2626;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* TRANSLATE BUTTON */
+.translate-btn {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* ========================================
+   4. QUICK TEST PHRASES
+   ======================================== */
+
+
+.phrase-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.phrase-btn {
+  padding: 10px 18px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.phrase-btn:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: transparent;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.phrase-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+.phrase-btn:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   5. TRANSLATION RESULTS
+   ======================================== */
+.translation-results {
+  margin-bottom: 24px;
+}
+
+.translation-results h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.3px;
+}
+
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.result-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.result-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.language-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 16px;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.language-badge.bodo {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.language-badge.mizo {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.language-badge.english {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+}
+
+.result-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.result-text {
+  padding: 16px;
+  background: #f9fafb;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  min-height: 100px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #1e293b;
+  font-weight: 500;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
+.result-text:empty::before {
+  content: 'Translation will appear here...';
+  color: #94a3b8;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ========================================
+   6. INSTRUCTIONS
+   ======================================== */
+.instructions {
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border-left: 3px solid #667eea;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.instructions h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.instructions ol {
+  margin: 0;
+  padding: 0;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  flex: 1;
+  list-style: none;
+}
+
+.instructions ol li {
+  margin: 0;
+  line-height: 1.4;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.instructions ol li::before {
+  content: counter(list-item) ".";
+  counter-increment: list-item;
+  color: #667eea;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.instructions ol li strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.instructions .note {
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1e40af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.instructions .note::before {
+  content: '💡';
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.instructions code {
+  background: #f1f5f9;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-family: 'Courier New', 'Consolas', monospace;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 600;
+}
+
+/* ========================================
+   LOADING & EMPTY STATES
+   ======================================== */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: 16px;
+  color: #64748b;
+  margin-top: 8px;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 20px;
+  }
+  
+  .card {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .translation-test {
+    padding-top: 0;
+  }
+  
+  .test-header {
+    margin-bottom: 24px;
+    padding: 16px 0;
+  }
+  
+  .header-content {
+    padding: 0 20px;
+  }
+  
+  .test-header h1 {
+    font-size: 22px;
+  }
+  
+  .card {
+    padding: 20px;
+    border-radius: 12px;
+  }
+  
+  .card-title {
+    font-size: 16px;
+  }
+  
+  .language-buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .lang-btn {
+    width: 100%;
+    min-width: 100%;
+  }
+  
+  .input-textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 120px;
+  }
+  
+  .results-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  .phrase-buttons {
+    gap: 8px;
+  }
+  
+  .phrase-btn {
+    font-size: 13px;
+    padding: 8px 14px;
+  }
+  
+  .result-text {
+    font-size: 16px;
+    min-height: 80px;
+  }
+  
+  .instructions {
+    padding: 14px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .instructions ol {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .instructions .note {
+    white-space: normal;
+  }
+  
+  .content-wrapper {
+    padding: 0 0 32px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .test-header h1 {
+    font-size: 20px;
+    text-align: center;
+  }
+  
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .card {
+    padding: 16px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .phrase-buttons {
+    flex-direction: column;
+  }
+  
+  .phrase-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY IMPROVEMENTS
+   ======================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .lang-btn {
+    border-width: 3px;
+  }
+  
+  .input-textarea {
+    border-width: 3px;
+  }
+  
+  .phrase-btn {
+    border-width: 3px;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   PRINT STYLES
+   ======================================== */
+@media print {
+  .translation-test {
+    background: white;
+  }
+  
+  .test-header {
+    position: static;
+    box-shadow: none;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  
+  .btn,
+  .quick-phrases {
+    display: none;
+  }
+  
+  .card {
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #e2e8f0;
+  }
+}

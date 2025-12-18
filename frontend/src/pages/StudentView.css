@@ -1,0 +1,462 @@
+.student-view {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  color: white;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Login Container */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-box {
+  max-width: 400px;
+  width: 100%;
+  padding: 40px;
+  background: white;
+  color: #1e293b;
+}
+
+.login-box h2 {
+  text-align: center;
+  margin-bottom: 32px;
+  color: #667eea;
+  font-size: 28px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.btn-text {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 16px;
+  width: 100%;
+  text-align: center;
+  padding: 8px;
+}
+
+.btn-text:hover {
+  text-decoration: underline;
+}
+
+/* Top Bar */
+.top-bar {
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.top-bar-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.student-name {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.student-id {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.btn-icon {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-dot.connected {
+  background: #10b981;
+}
+
+.status-dot.disconnected {
+  background: #ef4444;
+}
+
+/* Subtitle Container */
+.subtitle-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  min-height: 400px;
+}
+
+.subtitle-box {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 32px 40px;
+  max-width: 900px;
+  width: 100%;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+}
+
+.subtitle-line {
+  text-align: center;
+  margin: 16px 0;
+  line-height: 1.6;
+}
+
+.subtitle-line.english {
+  font-size: 24px;
+  color: #e2e8f0;
+  font-weight: 500;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.subtitle-line.translated {
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lang-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  align-self: center;
+}
+
+.lang-indicator.bodo {
+  background: #3b82f6;
+}
+
+.lang-indicator.mizo {
+  background: #8b5cf6;
+}
+
+.no-subtitles {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 20px;
+  font-style: italic;
+}
+
+/* Language Switcher */
+.language-switcher {
+  padding: 24px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.switcher-container {
+  display: flex;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 8px;
+  border-radius: 50px;
+  backdrop-filter: blur(10px);
+}
+
+.lang-btn {
+  padding: 12px 32px;
+  border-radius: 50px;
+  border: 2px solid transparent;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lang-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.3);
+}
+
+/* Control Panel */
+.control-panel {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.control-panel .btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.control-panel .btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.control-panel .btn.btn-large {
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+/* Instructions */
+.instructions {
+  max-width: 600px;
+  margin: 0 auto 40px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.instructions h3 {
+  margin-bottom: 16px;
+  font-size: 20px;
+  color: white;
+}
+
+.instructions ol {
+  margin-left: 20px;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.8;
+}
+
+.instructions li {
+  margin: 8px 0;
+}
+
+/* Join Class Section */
+.join-class-section {
+  max-width: 500px;
+  margin: 16px auto;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(167, 139, 250, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.join-class-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #a78bfa;
+  font-weight: 700;
+}
+
+.join-class-section > p {
+  margin: 0 0 16px 0;
+  font-size: 13px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.join-class-section .form-group {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.join-class-section .form-group input {
+  flex: 1;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.join-class-section .form-group input:focus {
+  outline: none;
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.1);
+  background: white;
+}
+
+.join-class-section .form-group input::placeholder {
+  color: #94a3b8;
+}
+
+.join-class-section .form-group .btn {
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #a78bfa 0%, #ec4899 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.join-class-section .form-group .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(167, 139, 250, 0.4);
+}
+
+.join-class-section .form-group .btn:active {
+  transform: translateY(0);
+}
+
+.join-class-section .error-message {
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+  border-radius: 6px;
+  color: #fca5a5;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .subtitle-box {
+    padding: 24px 20px;
+  }
+  
+  .subtitle-line.english {
+    font-size: 18px;
+  }
+  
+  .subtitle-line.translated {
+    font-size: 22px;
+  }
+  
+  .switcher-container {
+    flex-direction: column;
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .lang-btn {
+    width: 100%;
+  }
+  
+  .control-panel {
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .control-panel .btn {
+    width: 100%;
+  }
+  
+  .instructions {
+    margin: 0 16px 40px;
+  }
+
+  .join-class-section {
+    margin: 20px 16px;
+    padding: 20px;
+  }
+
+  .join-class-section .form-group {
+    flex-direction: column;
+  }
+
+  .join-class-section .form-group .btn {
+    width: 100%;
+  }
+}

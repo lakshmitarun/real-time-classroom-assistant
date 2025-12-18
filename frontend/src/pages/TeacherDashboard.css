@@ -1,0 +1,221 @@
+.teacher-dashboard {
+  min-height: 100vh;
+  background: var(--bg-secondary);
+}
+
+.dashboard-header {
+  background: white;
+  box-shadow: var(--shadow-sm);
+  padding: 20px 0;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 32px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header-content h1 {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.dashboard-content {
+  padding-bottom: 40px;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+}
+
+.latency-indicator {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.latency-indicator strong {
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+/* Speech Input Section */
+.speech-input-section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recording-badge {
+  background: var(--danger-color);
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.speech-input-box {
+  min-height: 180px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+  border: 2px dashed var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.speech-text {
+  font-size: 20px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.placeholder-text {
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-style: italic;
+  text-align: center;
+}
+
+.test-input {
+  margin-top: 16px;
+}
+
+.speech-test-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-family: inherit;
+  transition: border-color 0.3s ease;
+}
+
+.speech-test-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+}
+
+/* Translation Section */
+.translation-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.translation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.translation-card {
+  min-height: 200px;
+}
+
+.translation-header {
+  margin-bottom: 16px;
+}
+
+.translation-output {
+  min-height: 140px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 20px;
+  font-size: 18px;
+  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Control Buttons */
+.control-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  transform: none;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  
+  .header-content h1 {
+    font-size: 24px;
+  }
+  
+  .status-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .status-item {
+    justify-content: center;
+  }
+  
+  .translation-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .control-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .control-buttons .btn {
+    width: 100%;
+  }
+}
