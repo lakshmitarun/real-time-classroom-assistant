@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Copy, Trash2, Volume2, ArrowRightLeft } from 'lucide-react';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 import './TranslationTest.css';
 
 const TranslationTest = () => {
@@ -87,12 +88,12 @@ const TranslationTest = () => {
       if (sourceLanguage === 'english') {
         // English → Bodo + Mizo
         const [bodoRes, mizoRes] = await Promise.all([
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'english',
             target_lang: 'bodo'
           }),
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'english',
             target_lang: 'mizo'
@@ -106,12 +107,12 @@ const TranslationTest = () => {
       } else if (sourceLanguage === 'bodo') {
         // Bodo → English + Mizo
         const [engRes, mizoRes] = await Promise.all([
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'bodo',
             target_lang: 'english'
           }),
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'bodo',
             target_lang: 'mizo'
@@ -125,12 +126,12 @@ const TranslationTest = () => {
       } else if (sourceLanguage === 'mizo') {
         // Mizo → English + Bodo
         const [engRes, bodoRes] = await Promise.all([
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'mizo',
             target_lang: 'english'
           }),
-          axios.post('http://localhost:5000/api/translate', {
+          axios.post(`${API_BASE_URL}/api/translate`, {
             text: inputText.trim(),
             source_lang: 'mizo',
             target_lang: 'bodo'

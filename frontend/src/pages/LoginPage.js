@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, LogIn, User, Globe, BookOpen, Shield } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
+import API_BASE_URL from '../config/api';
 import './LoginPage.css';
 
 const LoginPage = () => {
@@ -69,7 +70,7 @@ const LoginPage = () => {
         ? { email: formData.email, password: formData.password }
         : { email: formData.email, password: formData.password, name: formData.name };
 
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)

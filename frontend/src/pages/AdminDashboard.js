@@ -5,6 +5,7 @@ import {
   Home, Users, Activity, Clock, TrendingUp, 
   Database, Upload, Download, BarChart3 
 } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -27,8 +28,8 @@ const AdminDashboard = () => {
     const fetchData = async () => {
       try {
         const [statsRes, studentsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/stats'),
-          axios.get('http://localhost:5000/api/active-students')
+          axios.get(`${API_BASE_URL}/api/stats`),
+          axios.get(`${API_BASE_URL}/api/active-students`)
         ]);
         
         setStats({

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Download, Home, Play, Square } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 import './TeacherDashboard.css';
 
 const TeacherDashboard = () => {
@@ -37,7 +38,7 @@ const TeacherDashboard = () => {
   const startClass = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/teacher/start-class', {
+      const response = await fetch(`${API_BASE_URL}/api/teacher/start-class`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,7 +65,7 @@ const TeacherDashboard = () => {
     try {
       const token = localStorage.getItem('token');
       if (joinCode) {
-        await fetch('http://localhost:5000/api/teacher/stop-class', {
+        await fetch(`${API_BASE_URL}/api/teacher/stop-class`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -105,7 +106,7 @@ const TeacherDashboard = () => {
     
     try {
       const startTime = performance.now();
-      const response = await fetch('http://localhost:5000/api/translate/batch', {
+      const response = await fetch(`${API_BASE_URL}/api/translate/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

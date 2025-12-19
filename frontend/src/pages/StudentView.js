@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Volume2, VolumeX, LogIn } from 'lucide-react';
 import axios from 'axios';
+import API_BASE_URL from '../config/api';
 import './StudentView.css';
 
 const StudentView = () => {
@@ -42,7 +43,7 @@ const StudentView = () => {
     setLoginError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/student/login', {
+      const response = await axios.post(`${API_BASE_URL}/api/student/login`, {
         userId: loginForm.userId.trim(),
         password: loginForm.password.trim()
       });
@@ -74,7 +75,7 @@ const StudentView = () => {
   const handleLogout = async () => {
     try {
       if (studentData?.userId) {
-        await axios.post('http://localhost:5000/api/logout', {
+        await axios.post(`${API_BASE_URL}/api/logout`, {
           userId: studentData.userId
         });
       }
@@ -148,7 +149,7 @@ const StudentView = () => {
     }
 
     try {
-      const resp = await axios.post('http://localhost:5000/api/student/join', {
+      const resp = await axios.post(`${API_BASE_URL}/api/student/join`, {
         studentId: studentId.trim(),
         joinCode: joinCodeInput.trim().toUpperCase()
       });
