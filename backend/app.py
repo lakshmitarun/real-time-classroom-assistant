@@ -130,8 +130,16 @@ def google_callback():
             if not email or not google_id:
                 return jsonify({'error': 'ID token missing required fields'}), 400
 
-            result, status_code = auth_service.google_login(email, name, google_id)
-            return jsonify(result), status_code
+            try:
+                result = auth_service.google_login(email, name, google_id)
+                if isinstance(result, tuple):
+                    result, status_code = result
+                else:
+                    status_code = 200
+                return jsonify(result), status_code
+            except Exception as e:
+                print(f"❌ Google login error: {str(e)}")
+                return jsonify({'error': f'Login failed: {str(e)}'}), 500
 
         # Fallback: legacy payload
         email = data.get('email', '').strip()
