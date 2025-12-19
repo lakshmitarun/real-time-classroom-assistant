@@ -460,3 +460,14 @@
     width: 100%;
   }
 }
+
+/* Disabled button state */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}

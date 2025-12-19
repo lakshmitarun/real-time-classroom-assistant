@@ -299,6 +299,8 @@ const StudentView = () => {
         <button 
           className={`btn ${isConnected ? 'btn-danger' : 'btn-success'} btn-large`}
           onClick={toggleConnection}
+          disabled={joinError ? true : false}
+          title={joinError ? 'Clear the error and try joining by code again' : ''}
         >
           {isConnected ? 'Disconnect' : 'Connect to Classroom'}
         </button>
