@@ -151,6 +151,46 @@ class AuthService:
         except jwt.InvalidTokenError:
             return {'valid': False, 'message': 'Invalid token'}
     
+    def google_login(self, email, name, google_id):
+        """Login or register with Google"""
+        email = email.lower().strip()
+        
+        if email not in self.teachers_db:
+            # Create new teacher account
+            teacher_id = f"T{len(self.teachers_db) + 1000}"
+            self.teachers_db[email] = {
+                'id': teacher_id,
+                'email': email,
+                'name': name,
+                'google_id': google_id,
+                'auth_method': 'google',
+                'created_at': datetime.utcnow().isoformat(),
+                'last_login': datetime.utcnow().isoformat()
+            }
+        else:
+            # Update existing teacher
+            teacher = self.teachers_db[email]
+            teacher['google_id'] = google_id
+            teacher['last_login'] = datetime.utcnow().isoformat()
+        
+        self._save_teachers()
+        
+        # Generate JWT token
+        token = self.generate_token(email)
+        teacher = self.teachers_db[email]
+        
+        return {
+            'success': True,
+            'token': token,
+            'role': 'teacher',
+            'teacher': {
+                'id': teacher['id'],
+                'email': teacher['email'],
+                'name': teacher['name'],
+                'auth_method': 'google'
+            }
+        }, 200
+    
     def get_teacher(self, user_id):
         """Get teacher by ID"""
         for email, teacher in self.teachers_db.items():
