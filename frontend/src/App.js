@@ -6,6 +6,7 @@ import TeacherDashboard from './pages/TeacherDashboard';
 import StudentView from './pages/StudentView';
 import TranslationTest from './pages/TranslationTest';
 import AdminDashboard from './pages/AdminDashboard';
+import DiagnosticPage from './pages/DiagnosticPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
@@ -48,6 +49,7 @@ function App() {
           {/* Other Routes */}
           <Route path="/test" element={<TranslationTest />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/diagnostic" element={<DiagnosticPage />} />
         </Routes>
       </div>
     </Router>
