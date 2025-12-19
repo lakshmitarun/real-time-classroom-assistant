@@ -19,12 +19,19 @@ import string
 load_dotenv()
 
 app = Flask(__name__)
-# Configure CORS to allow frontend on port 3001
+# Configure CORS to allow frontend on all development and production URLs
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3001", "http://localhost:3000", "http://localhost:5000"],
+        "origins": [
+            "http://localhost:3001",
+            "http://localhost:3000",
+            "http://localhost:5000",
+            "https://kill-project.vercel.app",  # Frontend Vercel URL
+            "https://*.vercel.app",  # All Vercel apps
+        ],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
     }
 })
 
