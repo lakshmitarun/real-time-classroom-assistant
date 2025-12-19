@@ -148,8 +148,7 @@ const LoginPage = () => {
       }
 
       // Send the raw ID token (credential) to the backend for verification
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000';
-      const res = await fetch(`${backendUrl}/api/auth/google/callback`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ credential })
