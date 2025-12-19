@@ -5,60 +5,31 @@ import bcrypt
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import request, jsonify
-from supabase_config import get_supabase
 
 class AuthService:
     def __init__(self, secret_key='your-secret-key-change-this'):
         self.secret_key = secret_key
-        self.supabase = get_supabase()
-        # Fallback to local file if Supabase fails
+        # Use local JSON file for teacher storage
         self.teachers_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'teachers.json')
         self.teachers_db = self._load_teachers()
     
     def _load_teachers(self):
-        """Load teachers from Supabase, fallback to local JSON"""
+        """Load teachers from local JSON file"""
         try:
-            response = self.supabase.table('teachers').select('*').execute()
-            teachers = {}
-            for teacher in response.data:
-                email = teacher.get('email', '').lower()
-                if email:
-                    teachers[email] = {
-                        'id': teacher.get('id'),
-                        'email': teacher.get('email'),
-                        'name': teacher.get('name'),
-                        'password_hash': teacher.get('password_hash'),
-                        'auth_method': teacher.get('auth_method', 'email'),
-                        'created_at': teacher.get('created_at'),
-                        'last_login': teacher.get('last_login'),
-                        'google_id': teacher.get('google_id')
-                    }
-            print("✓ Teachers loaded from Supabase")
-            return teachers
-        except Exception as e:
-            print(f"⚠️ Supabase failed, loading from local file: {e}")
             if os.path.exists(self.teachers_file):
-                try:
-                    with open(self.teachers_file, 'r', encoding='utf-8') as f:
-                        return json.load(f)
-                except Exception as e2:
-                    print(f"❌ Error loading teachers: {e2}")
+                with open(self.teachers_file, 'r', encoding='utf-8') as f:
+                    teachers = json.load(f)
+                    print(f"✓ Teachers loaded from local file: {len(teachers)} records")
+                    return teachers
+            else:
+                print("⚠️ Teachers file not found, starting with empty database")
+                return {}
+        except Exception as e:
+            print(f"❌ Error loading teachers: {e}")
             return {}
     
     def _save_teachers(self):
-        """Save teachers to both Supabase and local file"""
-        try:
-            # Update Supabase
-            for email, teacher in self.teachers_db.items():
-                try:
-                    self.supabase.table('teachers').update(teacher).eq('email', email).execute()
-                except:
-                    # If update fails, try insert
-                    self.supabase.table('teachers').insert(teacher).execute()
-        except Exception as e:
-            print(f"⚠️ Supabase save failed: {e}")
-        
-        # Also save locally as backup
+        """Save teachers to local JSON file"""
         try:
             os.makedirs(os.path.dirname(self.teachers_file), exist_ok=True)
             with open(self.teachers_file, 'w', encoding='utf-8') as f:

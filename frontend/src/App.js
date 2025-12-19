@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import TeacherDashboard from './pages/TeacherDashboard';
@@ -10,48 +10,47 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
-  return (
-    <Router>
-      <div className="App">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* Teacher Routes - Protected */}
-          <Route 
-            path="/teacher-dashboard" 
-            element={
-              <ProtectedRoute requiredRole="teacher">
-                <TeacherDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/teacher" 
-            element={
-              <ProtectedRoute requiredRole="teacher">
-                <TeacherDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Student Routes - Protected */}
-          <Route 
-            path="/student" 
-            element={
-              <ProtectedRoute requiredRole="student">
-                <StudentView />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Other Routes */}
-          <Route path="/test" element={<TranslationTest />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-        </Routes>
-      </div>
-    </Router>
+  // Enable React Router v7 future flags to suppress deprecation warnings
+  const router = createBrowserRouter(
+    [
+      { path: '/', element: <HomePage /> },
+      { path: '/login', element: <LoginPage /> },
+      {
+        path: '/teacher-dashboard',
+        element: (
+          <ProtectedRoute requiredRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/teacher',
+        element: (
+          <ProtectedRoute requiredRole="teacher">
+            <TeacherDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/student',
+        element: (
+          <ProtectedRoute requiredRole="student">
+            <StudentView />
+          </ProtectedRoute>
+        ),
+      },
+      { path: '/test', element: <TranslationTest /> },
+      { path: '/admin', element: <AdminDashboard /> },
+    ],
+    {
+      future: {
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      },
+    }
   );
+
+  return <RouterProvider router={router} />;
 }
 
 export default App;

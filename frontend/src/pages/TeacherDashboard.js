@@ -38,6 +38,9 @@ const TeacherDashboard = () => {
   const startClass = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('🎓 Starting class...');
+      console.log('Token available:', !!token);
+      
       const response = await fetch(`${API_BASE_URL}/api/teacher/start-class`, {
         method: 'POST',
         headers: {
@@ -46,14 +49,26 @@ const TeacherDashboard = () => {
         },
         body: JSON.stringify({ subject: 'General' })
       });
+      
+      console.log('Start class response status:', response.status);
       const data = await response.json();
+      console.log('Start class response data:', data);
+      
       if (data.success) {
         setJoinCode(data.joinCode || '');
         setJoinMessage('Share this code with students');
+        console.log('✅ Class started with code:', data.joinCode);
+      } else {
+        console.error('❌ Failed to start class:', data.message);
+        alert(`Failed to start class: ${data.message}`);
+        return;
       }
     } catch (err) {
-      console.error('Error starting class', err);
+      console.error('❌ Error starting class:', err);
+      alert(`Error: ${err.message}`);
+      return;
     }
+    
     setClassActive(true);
     setIsListening(true);
     setEnglishText('');
@@ -64,8 +79,9 @@ const TeacherDashboard = () => {
   const stopClass = async () => {
     try {
       const token = localStorage.getItem('token');
+      console.log('🛑 Stopping class...');
       if (joinCode) {
-        await fetch(`${API_BASE_URL}/api/teacher/stop-class`, {
+        const response = await fetch(`${API_BASE_URL}/api/teacher/stop-class`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -73,9 +89,12 @@ const TeacherDashboard = () => {
           },
           body: JSON.stringify({ joinCode })
         });
+        console.log('Stop class response status:', response.status);
+        const data = await response.json();
+        console.log('Stop class response:', data);
       }
     } catch (err) {
-      console.error('Error stopping class', err);
+      console.error('❌ Error stopping class:', err);
     }
     setClassActive(false);
     setIsListening(false);
@@ -105,6 +124,7 @@ const TeacherDashboard = () => {
     }
     
     try {
+      console.log('🔤 Translating text:', text);
       const startTime = performance.now();
       const response = await fetch(`${API_BASE_URL}/api/translate/batch`, {
         method: 'POST',
@@ -116,13 +136,17 @@ const TeacherDashboard = () => {
       });
       
       const endTime = performance.now();
-      setLatency(((endTime - startTime) / 1000).toFixed(1));
+      const responseTime = ((endTime - startTime) / 1000).toFixed(1);
+      setLatency(responseTime);
+      
+      console.log('Translation response status:', response.status);
       
       if (!response.ok) {
-        throw new Error('Translation API failed');
+        throw new Error(`Translation API failed: ${response.status}`);
       }
       
       const data = await response.json();
+      console.log('Translation response:', data);
       
       if (data.translations && data.translations.bodo) {
         setBodoTranslation(data.translations.bodo);
@@ -136,7 +160,7 @@ const TeacherDashboard = () => {
         setMizoTranslation('— (not found in dataset)');
       }
     } catch (error) {
-      console.error('Translation error:', error);
+      console.error('❌ Translation error:', error);
       setBodoTranslation('— (backend error)');
       setMizoTranslation('— (backend error)');
     }

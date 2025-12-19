@@ -8,8 +8,7 @@ from threading import Lock
 from dotenv import load_dotenv
 from services.translation_service import TranslationService
 from services.speech_service import SpeechService
-from auth_service_supabase import AuthService, token_required
-from supabase_config import get_supabase
+from auth_service import AuthService, token_required
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from datetime import datetime
@@ -26,6 +25,10 @@ CORS(app, resources={
             "http://localhost:3001",
             "http://localhost:3000",
             "http://localhost:5000",
+            "http://localhost:5173",
+            "http://127.0.0.1:3001",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:5173",
             "https://kill-project.vercel.app",  # Frontend Vercel URL
             "https://*.vercel.app",  # All Vercel apps
         ],
@@ -39,7 +42,6 @@ CORS(app, resources={
 translation_service = TranslationService()
 speech_service = SpeechService()
 auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
-supabase = get_supabase()
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 
 # Log OAuth configuration
@@ -95,32 +97,50 @@ def register():
 def login():
     try:
         data = request.json
+        if not data:
+            print("❌ Login: No JSON data received")
+            return jsonify({'error': 'Request body must be JSON'}), 400
+        
         email = data.get('email', '').strip()
         password = data.get('password', '')
         
         if not email or not password:
+            print(f"❌ Login: Missing credentials - email={bool(email)}, password={bool(password)}")
             return jsonify({'error': 'Email and password are required'}), 400
         
+        print(f"📧 Login attempt: {email}")
         result, status_code = auth_service.login(email, password)
+        if status_code == 200:
+            print(f"✅ Login successful: {email}")
+        else:
+            print(f"❌ Login failed: {email} - Status {status_code}")
         return jsonify(result), status_code
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ Login error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/auth/google/callback', methods=['POST'])
 def google_callback():
     """Handle Google OAuth callback - frontend sends Google token"""
     try:
         data = request.json or {}
+        print(f"🔐 Google callback received from origin: {request.headers.get('Origin')}")
 
         # Accept either a client-verified ID token (credential) or legacy { email, name, id }
         credential = data.get('credential') or data.get('id_token')
         if credential:
             if not GOOGLE_CLIENT_ID:
+                print("❌ Google callback: GOOGLE_CLIENT_ID not configured")
                 return jsonify({'error': 'Server misconfigured: GOOGLE_CLIENT_ID not set'}), 500
             try:
+                print("🔍 Verifying Google ID token...")
                 idinfo = id_token.verify_oauth2_token(credential, grequests.Request(), GOOGLE_CLIENT_ID)
+                print(f"✅ Token verified for: {idinfo.get('email')}")
             except ValueError as e:
+                print(f"❌ Invalid ID token: {str(e)}")
                 return jsonify({'error': f'Invalid ID token: {str(e)}'}), 400
 
             email = idinfo.get('email', '').strip()
@@ -128,17 +148,25 @@ def google_callback():
             google_id = idinfo.get('sub', '')
 
             if not email or not google_id:
+                print(f"❌ Token missing fields: email={bool(email)}, sub={bool(google_id)}")
                 return jsonify({'error': 'ID token missing required fields'}), 400
 
             try:
+                print(f"🔑 Processing Google login: {email}")
                 result = auth_service.google_login(email, name, google_id)
                 if isinstance(result, tuple):
                     result, status_code = result
                 else:
                     status_code = 200
+                if status_code == 200:
+                    print(f"✅ Google login successful: {email}")
+                else:
+                    print(f"❌ Google login failed: {email} - Status {status_code}")
                 return jsonify(result), status_code
             except Exception as e:
                 print(f"❌ Google login error: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 return jsonify({'error': f'Login failed: {str(e)}'}), 500
 
         # Fallback: legacy payload
@@ -147,6 +175,7 @@ def google_callback():
         google_id = data.get('id', '').strip()
 
         if not email or not google_id:
+            print(f"❌ Legacy Google payload missing fields")
             return jsonify({'error': 'Email and Google ID are required'}), 400
 
         result, status_code = auth_service.google_login(email, name, google_id)
@@ -385,11 +414,18 @@ def teacher_start_class():
         if not token:
             return jsonify({'success': False, 'message': 'Unauthorized'}), 401
 
-        email = auth_service.verify_token(token)
-        if not email:
-            return jsonify({'success': False, 'message': 'Invalid or expired token'}), 401
+        # Verify token and extract payload
+        token_result = auth_service.verify_token(token)
+        if not token_result.get('valid'):
+            return jsonify({'success': False, 'message': token_result.get('message', 'Invalid token')}), 401
 
-        teacher = auth_service.get_teacher(email)
+        # Get email from token payload
+        email = token_result.get('payload', {}).get('email')
+        if not email:
+            return jsonify({'success': False, 'message': 'Email not found in token'}), 401
+
+        # Get teacher by email
+        teacher = auth_service.teachers_db.get(email)
         if not teacher:
             return jsonify({'success': False, 'message': 'Teacher not found'}), 404
 
@@ -411,8 +447,10 @@ def teacher_start_class():
         }
         active_teacher_sessions[join_code] = session
 
+        print(f"✅ Class started - Code: {join_code}, Teacher: {teacher.get('name')}")
         return jsonify({'success': True, 'joinCode': join_code}), 200
     except Exception as e:
+        print(f"❌ Error starting class: {str(e)}")
         return jsonify({'success': False, 'message': f'Failed to start class: {str(e)}'}), 500
 
 
