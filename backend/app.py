@@ -8,7 +8,8 @@ from threading import Lock
 from dotenv import load_dotenv
 from services.translation_service import TranslationService
 from services.speech_service import SpeechService
-from auth_service import AuthService, token_required
+from auth_service_supabase import AuthService, token_required
+from supabase_config import get_supabase
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from datetime import datetime
@@ -21,7 +22,7 @@ app = Flask(__name__)
 # Configure CORS to allow frontend on port 3001
 CORS(app, resources={
     r"/api/*": {
-        "origins": ["http://localhost:3001", "http://localhost:3000"],
+        "origins": ["http://localhost:3001", "http://localhost:3000", "http://localhost:5000"],
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -31,6 +32,7 @@ CORS(app, resources={
 translation_service = TranslationService()
 speech_service = SpeechService()
 auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
+supabase = get_supabase()
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 
 # Log OAuth configuration
