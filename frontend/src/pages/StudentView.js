@@ -95,6 +95,7 @@ const StudentView = () => {
     }
   };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   const speakText = (text) => {
     if (audioEnabled && 'speechSynthesis' in window) {
       // Stop any ongoing speech first
