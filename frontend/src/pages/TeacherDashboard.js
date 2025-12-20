@@ -41,12 +41,17 @@ const TeacherDashboard = () => {
       console.log('🎓 Starting class...');
       console.log('Token available:', !!token);
       
+      const headers = {
+        'Content-Type': 'application/json'
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/api/teacher/start-class`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
+        headers,
         body: JSON.stringify({ subject: 'General' })
       });
       
@@ -81,12 +86,17 @@ const TeacherDashboard = () => {
       const token = localStorage.getItem('token');
       console.log('🛑 Stopping class...');
       if (joinCode) {
+        const headers = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+        
         const response = await fetch(`${API_BASE_URL}/api/teacher/stop-class`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': token ? `Bearer ${token}` : ''
-          },
+          headers,
           body: JSON.stringify({ joinCode })
         });
         console.log('Stop class response status:', response.status);
