@@ -28,25 +28,50 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Configure CORS to allow frontend on all development and production URLs
-CORS(app, resources={
-    r"/api/*": {
-        "origins": [
-            "http://localhost:3001",
-            "http://localhost:3000",
-            "http://localhost:5000",
-            "http://localhost:5173",
-            "http://127.0.0.1:3001",
-            "http://127.0.0.1:3000",
-            "http://127.0.0.1:5173",
-            "https://kill-project.vercel.app",  # Frontend Vercel URL
-            "https://*.vercel.app",  # All Vercel apps
-        ],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": True
+# Configure CORS for production and development
+# Get allowed origins from environment or use defaults
+ALLOWED_ORIGINS = [
+    # Development
+    "http://localhost:3001",
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    # Production - Vercel
+    "https://real-time-classroom-assistant-n4yjfaano.vercel.app",
+    "https://classroom-assistant-frontend.vercel.app",
+]
+
+# Add custom origins from environment variable if set
+if os.getenv('CORS_ORIGINS'):
+    ALLOWED_ORIGINS.extend(os.getenv('CORS_ORIGINS', '').split(','))
+
+CORS(app, 
+    resources={
+        r"/api/*": {
+            "origins": ALLOWED_ORIGINS,
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "expose_headers": ["Content-Type"],
+            "supports_credentials": True,
+            "max_age": 3600
+        }
     }
-})
+)
+
+# Handle preflight requests explicitly
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
+        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept")
+        response.headers.add("Access-Control-Max-Age", "3600")
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+        return response, 200
 
 # Global error handler for 404
 @app.errorhandler(404)
