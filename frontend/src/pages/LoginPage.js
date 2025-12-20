@@ -117,6 +117,7 @@ const LoginPage = () => {
     }
   };
 
+    // eslint-disable-next-line no-unused-vars
   const parseJwt = (token) => {
     try {
       const base64Url = token.split('.')[1];
