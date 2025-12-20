@@ -39,7 +39,8 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    # Production - Vercel
+    # Production - Vercel (multiple deployments)
+    "https://real-time-classroom-assistant-2ze2pt6u7.vercel.app",
     "https://real-time-classroom-assistant-n4yjfaano.vercel.app",
     "https://classroom-assistant-frontend.vercel.app",
 ]
