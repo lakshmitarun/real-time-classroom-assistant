@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Mail, Lock, LogIn, User, Globe, BookOpen, Shield } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';

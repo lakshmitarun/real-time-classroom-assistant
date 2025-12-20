@@ -22,14 +22,16 @@ const AdminDashboard = () => {
     totalTranslations: 0
   });
   const [activeStudents, setActiveStudents] = useState([]);
+  const [translationStats, setTranslationStats] = useState([]);
 
   // Fetch stats and active students on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, studentsRes] = await Promise.all([
+        const [statsRes, studentsRes, translationStatsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/stats`),
-          axios.get(`${API_BASE_URL}/api/active-students`)
+          axios.get(`${API_BASE_URL}/api/active-students`),
+          axios.get(`${API_BASE_URL}/api/translation-stats`)
         ]);
         
         setStats({
@@ -44,6 +46,10 @@ const AdminDashboard = () => {
         });
         
         setActiveStudents(studentsRes.data.students);
+        
+        if (translationStatsRes && translationStatsRes.data && translationStatsRes.data.stats) {
+          setTranslationStats(translationStatsRes.data.stats);
+        }
       } catch (error) {
         console.error('Failed to fetch data:', error);
       }
@@ -55,9 +61,8 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // recentActivity and translationStats removed (no hardcoded demo data)
+  // recentActivity kept empty; translationStats now fetched from backend
   const recentActivity = [];
-  const translationStats = [];
 
   const handleUploadDataset = () => {
     alert('Upload dataset functionality coming soon!');

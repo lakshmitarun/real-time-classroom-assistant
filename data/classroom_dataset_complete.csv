@@ -3658,3 +3658,216 @@ ID,English,Bodo,Mizo,Category
 3656,Vijaya,विजया,Vijaya,Person Names
 3657,Yamini,यामिनी,Yamini,Person Names
 3658,Yashoda,यशोदा,Yashoda,Person Names
+3659,Sun,सूर्य,Ni,Nature
+3660,Moon,चाँद,Thla,Nature
+3661,Star,तारा,Arsi,Nature
+3662,Sky,आकाश,Vân,Nature
+3663,Cloud,बादल,Chhûm,Nature
+3664,Rain,बारिश,Ruah,Nature
+3665,Wind,हवा,Thli,Nature
+3666,Fire,आग,Mei,Nature
+3667,Water,पानी,Tui,Nature
+3668,Earth,पृथ्वी,Lei,Nature
+3669,Stone,पत्थर,Lung,Nature
+3670,Sand,रेत,Nâwi,Nature
+3671,Tree,पेड़,Thing,Nature
+3672,Leaf,पत्ता,Hnah,Nature
+3673,Flower,फूल,Pang,Nature
+3674,Fruit,फल,Thei,Nature
+3675,Seed,बीज,Chi,Nature
+3676,Root,जड़,Hnahthial,Nature
+3677,Branch,शाखा,Pâl,Nature
+3678,Forest,जंगल,Ramtluang,Nature
+3679,Mountain,पहाड़,Tlâng,Nature
+3680,River,नदी,Lui,Nature
+3681,Lake,झील,Dil,Nature
+3682,Sea,समुद्र,Tuipui,Nature
+3683,Road,सड़क,Kawng,Everyday Objects
+3684,Path,रास्ता,Kawngtê,Everyday Objects
+3685,House,घर,In,Everyday Objects
+3686,Room,कमरा,Pûk,Everyday Objects
+3687,Door,दरवाजा,Kawng,Everyday Objects
+3688,Window,खिड़की,Thlâk,Everyday Objects
+3689,Wall,दीवार,Kulh,Everyday Objects
+3690,Roof,छत,Inzâr,Everyday Objects
+3691,Floor,फर्श,Leithla,Everyday Objects
+3692,Chair,कुर्सी,Thutthleng,Everyday Objects
+3693,Table,मेज,Dârbâr,Everyday Objects
+3694,Bed,बिस्तर,Muanna,Everyday Objects
+3695,Pillow,तकिया,Muân,Everyday Objects
+3696,Blanket,कंबल,Puân,Everyday Objects
+3697,Cloth,कपड़ा,Puân,Clothing
+3698,Shirt,कमीज,Awmhlap,Clothing
+3699,Pant,पतलून,Bâwmhlap,Clothing
+3700,Shoes,जूते,Kêthlâk,Clothing
+3701,Hat,टोपी,Lukhung,Clothing
+3702,Bag,बैग,Bâwkte,Everyday Objects
+3703,Book,किताब,Lehkhabu,School
+3704,Pen,कलम,Pên,School
+3705,Pencil,पेंसिल,Pensil,School
+3706,Paper,कागज,Lehkha,School
+3707,Letter,चिट्ठी,Lehkha,Communication
+3708,Word,शब्द,Thumal,Language
+3709,Sentence,वाक्य,Thumalphung,Language
+3710,Language,भाषा,Ṭawng,Language
+3711,Voice,आवाज,Aw,Communication
+3712,Sound,ध्वनि,Aw,Communication
+3713,Music,संगीत,Rimâwi,Arts
+3714,Song,गीत,Hla,Arts
+3715,Dance,नृत्य,Lam,Arts
+3716,Art,कला,Thiamna,Arts
+3717,Picture,चित्र,Thlalak,Arts
+3718,Color,रंग,Rawng,Properties
+3719,Red,लाल,Sen,Colors
+3720,Blue,नीला,Dum,Colors
+3721,Green,हरा,Hring,Colors
+3722,Yellow,पीला,Eng,Colors
+3723,White,सफेद,Vâr,Colors
+3724,Black,काला,Awh,Colors
+3725,Day,दिन,Ni,Time
+3726,Night,रात,Zan,Time
+3727,Morning,सुबह,Zing,Time
+3728,Evening,शाम,Tlai,Time
+3729,Time,समय,Hun,Time
+3730,Year,साल,Kum,Time
+3731,Month,महीना,Thla,Time
+3732,Week,हफ्ता,Chawng,Time
+3733,Hour,घंटा,Dar,Time
+3734,Minute,मिनट,Minute,Time
+3735,Second,सेकंड,Second,Time
+3736,Number,अंक,Nambar,Mathematics
+3737,One,एक,Pakhat,Numbers
+3738,Two,दो,Pahnih,Numbers
+3739,Three,तीन,Pathum,Numbers
+3740,Four,चार,Palî,Numbers
+3741,Five,पाँच,Pangâ,Numbers
+3742,Six,छः,Paruk,Numbers
+3743,Seven,सात,Pasarih,Numbers
+3744,Eight,आठ,Pariat,Numbers
+3745,Nine,नौ,Paku,Numbers
+3746,Ten,दस,Sawm,Numbers
+3747,Man,आदमी,Mî,People
+3748,Woman,महिला,Hmeichhia,People
+3749,Child,बच्चा,Naupang,People
+3750,Boy,लड़का,Tlangval,People
+3751,Girl,लड़की,Naupangnu,People
+3752,Father,पिता,Pa,Family
+3753,Mother,माता,Nu,Family
+3754,Brother,भाई,Unaupa,Family
+3755,Sister,बहन,Unaunu,Family
+3756,Friend,मित्र,Ṭhian,People
+3757,Enemy,शत्रु,Hmêlmâ,People
+3758,People,लोग,Mîte,People
+3759,Family,परिवार,Chhûngkua,Family
+3760,Village,गाँव,Khua,Geography
+3761,Town,कस्बा,Khawpui,Geography
+3762,City,शहर,Khawpui,Geography
+3763,Country,देश,Ram,Geography
+3764,World,दुनिया,Khawvêl,Geography
+3765,King,राजा,Lal,Royalty
+3766,Queen,रानी,Lalnu,Royalty
+3767,Leader,नेता,Hruaitu,People
+3768,Teacher,शिक्षक,Zirtirtu,School
+3769,Student,छात्र,Zirlai,School
+3770,School,पाठशाला,Zirna In,School
+3771,College,कॉलेज,College,School
+3772,Office,कार्यालय,Office,Work
+3773,Work,काम,Thawkna,Work
+3774,Job,नौकरी,Hna,Work
+3775,Money,पैसा,Sum,Commerce
+3776,Price,मूल्य,Man,Commerce
+3777,Market,बाजार,Dâwr,Commerce
+3778,Shop,दुकान,Dâwr,Commerce
+3779,Food,खाना,Eiṭhâwina,Food
+3780,Rice,चावल,Buh,Food
+3781,Bread,रोटी,Chhang,Food
+3782,Milk,दूध,Chaw,Food
+3783,Tea,चाय,Tî,Beverages
+3784,Coffee,कॉफी,Coffee,Beverages
+3785,Sugar,चीनी,Thlâi,Food
+3786,Salt,नमक,Chi,Food
+3787,Oil,तेल,Hriak,Food
+3788,Meat,मांस,Sâ,Food
+3789,Fish,मछली,Nga,Food
+3790,Egg,अंडा,Aih,Food
+3791,Vegetable,सब्जी,Thlâwthil,Food
+3792,Sweet,मीठा,Thlâi,Taste
+3793,Bitter,कड़वा,Hlai,Taste
+3794,Hot,गरम,Thâ,Temperature
+3795,Cold,ठंडा,Vawt,Temperature
+3796,Fast,तेज,Chak,Speed
+3797,Slow,धीरा,Chawm,Speed
+3798,Big,बड़ा,Lian,Size
+3799,Small,छोटा,Tê,Size
+3800,Long,लंबा,Sei,Size
+3801,Short,छोटा,Tê,Size
+3802,Good,अच्छा,Ṭha,Adjectives
+3803,Bad,बुरा,Ṭha lo,Adjectives
+3804,True,सच,Dik,Truth
+3805,False,झूठ,Dik lo,Truth
+3806,New,नया,Thar,Adjectives
+3807,Old,पुराना,Hlui,Adjectives
+3808,Easy,आसान,Awlsam,Difficulty
+3809,Hard,कठिन,Harsa,Difficulty
+3810,Near,पास,Nêna,Distance
+3811,Far,दूर,Hla,Distance
+3812,Open,खुला,Hawng,Actions
+3813,Close,बंद,Khâr,Actions
+3814,Start,शुरू,Tanchhuah,Actions
+3815,End,अंत,Tâwp,Actions
+3816,Life,जीवन,Nunna,Life
+3817,Death,मृत्यु,Thihna,Life
+3818,Love,प्रेम,Duhdawt,Emotions
+3819,Hate,घृणा,Hua,Emotions
+3820,Hope,आशा,Beiseina,Emotions
+3821,Fear,भय,Hlauhna,Emotions
+3822,Peace,शांति,Muanna,Emotions
+3823,War,युद्ध,Indona,Conflict
+3824,Help,सहायता,Ṭanpuina,Actions
+3825,Problem,समस्या,Buaina,Issues
+3826,Answer,उत्तर,Chhânna,Communication
+3827,Question,प्रश्न,Zawhna,Communication
+3828,Idea,विचार,Thilngâi,Mind
+3829,Dream,सपना,Mangthang,Mind
+3830,Truth,सत्य,Dikna,Truth
+3831,Power,शक्ति,Thiltithei,Strength
+3832,Light,प्रकाश,Eng,Nature
+3833,Dark,अंधकार,Thim,Nature
+3834,Smile,मुस्कुराना,Ṭhî,Expressions
+3835,Cry,रोना,Tap,Expressions
+3836,Run,दौड़ना,Tlan,Movement
+3837,Walk,चलना,Kal,Movement
+3838,Sit,बैठना,Ṭhu,Movement
+3839,Stand,खड़ा,Ding,Movement
+3840,Sleep,सोना,Mut,Activities
+3841,Wake,जागना,Tho,Activities
+3842,Eat,खाना,Ei,Activities
+3843,Drink,पीना,In,Activities
+3844,See,देखना,Hmu,Senses
+3845,Hear,सुनना,Ngaithla,Senses
+3846,Speak,बोलना,Thu,Communication
+3847,Think,सोचना,Ngâihtuah,Mind
+3848,Know,जानना,Hria,Mind
+3849,Learn,सीखना,Zir,School
+3850,Teach,सिखाना,Zirtir,School
+3851,Play,खेलना,Lem,Activities
+3852,Work,काम,Thawk,Work
+3853,Stop,रुकना,Dâwl,Actions
+3854,Go,जाना,Kal,Movement
+3855,Come,आना,Lo,Movement
+3856,Give,देना,Pe,Actions
+3857,Take,लेना,Lâk,Actions
+3858,Buy,खरीदना,Lei,Commerce
+3859,Sell,बेचना,Zuâr,Commerce
+3860,Wait,प्रतीक्षा,Nghâk,Actions
+3861,Call,बुलाना,Koh,Communication
+3862,Build,बनाना,Sak,Actions
+3863,Break,तोड़ना,Bûr,Actions
+3864,Carry,ले जाना,Pu,Actions
+3865,Throw,फेंकना,Paih,Actions
+3866,Catch,पकड़ना,Man,Actions
+3867,Win,जीतना,Hneh,Actions
+3868,Lose,हारना,Thlâk,Actions
+3869,Agree,सहमत,Pawm,Communication
+3870,Refuse,इंकार,Pawm lo,Communication
+3871,Finish,समाप्त,Tâwp,Actions

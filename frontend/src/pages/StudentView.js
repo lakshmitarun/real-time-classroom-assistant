@@ -19,6 +19,8 @@ const StudentView = () => {
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
   const [joinedByCode, setJoinedByCode] = useState(false);
+  const [currentJoinCode, setCurrentJoinCode] = useState('');
+  const [lastContentTimestamp, setLastContentTimestamp] = useState('');
 
   // Check for saved session on component mount
   useEffect(() => {
@@ -93,7 +95,31 @@ const StudentView = () => {
     }
   };
 
-  // Simulate receiving subtitles
+  const speakText = (text) => {
+    if (audioEnabled && 'speechSynthesis' in window) {
+      // Stop any ongoing speech first
+      window.speechSynthesis.cancel();
+      
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set language based on selected language
+      if (selectedLanguage === 'bodo') {
+        utterance.lang = 'hi-IN'; // Use Hindi for Bodo (closest match)
+        utterance.rate = 0.9; // Slightly slower for clarity
+      } else {
+        utterance.lang = 'en-US'; // Use English for Mizo (closest match)
+        utterance.rate = 0.85; // Slower for clarity
+      }
+      
+      utterance.volume = 1;
+      utterance.pitch = 1;
+      
+      console.log(`🔊 Speaking ${selectedLanguage}: "${text}"`);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Simulate receiving subtitles or poll for real content
   useEffect(() => {
     if (isConnected && !joinedByCode) {
       // Only show demo subtitles if manually connected (not joined by code)
@@ -120,12 +146,75 @@ const StudentView = () => {
       }, 4000);
 
       return () => clearInterval(interval);
-    } else if (isConnected && joinedByCode) {
-      // Joined by code - wait for real teacher input
-      setEnglishSubtitle('Waiting for teacher to speak...');
-      setTranslatedSubtitle('शिक्षक के बोलने का इंतजार कर रहे हैं...');
+    } else if (isConnected && joinedByCode && currentJoinCode) {
+      // Joined by code - poll for real teacher input AND check if class is still active
+      console.log('📡 Polling for teacher content...');
+      
+      const pollContent = async () => {
+        try {
+          // First check if class is still active
+          const classCheckRes = await axios.get(`${API_BASE_URL}/api/student/check-class-active`, {
+            params: { joinCode: currentJoinCode }
+          });
+          
+          if (!classCheckRes.data.isActive) {
+            // Class was stopped by teacher - auto-disconnect
+            console.log('🔴 Class stopped by teacher. Disconnecting...');
+            setIsConnected(false);
+            setJoinedByCode(false);
+            setEnglishSubtitle('Class ended by teacher');
+            setTranslatedSubtitle('शिक्षक द्वारा कक्षा समाप्त / Zirtir lal sawn');
+            return;
+          }
+          
+          const response = await axios.get(`${API_BASE_URL}/api/student/get-content`, {
+            params: { joinCode: currentJoinCode }
+          });
+          
+          if (response.data.success && response.data.content) {
+            const content = response.data.content;
+            
+            // Only update if there's new content (different timestamp)
+            if (content.timestamp && content.timestamp !== lastContentTimestamp) {
+              setEnglishSubtitle(content.englishText || 'Waiting for teacher to speak...');
+              
+              const translation = selectedLanguage === 'bodo' 
+                ? content.bodoTranslation 
+                : content.mizoTranslation;
+              setTranslatedSubtitle(translation || 'Waiting for teacher to speak...');
+              
+              // Auto-speak if audio is enabled and there's content
+              if (audioEnabled && translation) {
+                speakText(translation);
+              }
+              
+              setLastContentTimestamp(content.timestamp);
+            } else if (!lastContentTimestamp) {
+              // First load
+              setEnglishSubtitle(content.englishText || 'Waiting for teacher to speak...');
+              const translation = selectedLanguage === 'bodo' 
+                ? content.bodoTranslation 
+                : content.mizoTranslation;
+              setTranslatedSubtitle(translation || 'Waiting for teacher to speak...');
+              if (lastContentTimestamp === '') {
+                setLastContentTimestamp(content.timestamp || 'init');
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error polling content:', error);
+        }
+      };
+      
+      // Poll every 500ms for new content
+      const interval = setInterval(pollContent, 500);
+      
+      // Also fetch immediately
+      pollContent();
+      
+      return () => clearInterval(interval);
     }
-  }, [isConnected, joinedByCode, selectedLanguage, audioEnabled]);
+  }, [isConnected, joinedByCode, currentJoinCode, selectedLanguage, audioEnabled, lastContentTimestamp, speakText]);
 
   const toggleConnection = () => {
     setIsConnected(!isConnected);
@@ -149,12 +238,16 @@ const StudentView = () => {
     }
 
     try {
+      const joinCode = joinCodeInput.trim().toUpperCase();
       const resp = await axios.post(`${API_BASE_URL}/api/student/join`, {
         studentId: studentId.trim(),
-        joinCode: joinCodeInput.trim().toUpperCase()
+        joinCode: joinCode
       });
 
       if (resp.data && resp.data.success) {
+        console.log('✅ Joined class with code:', joinCode);
+        setCurrentJoinCode(joinCode);
+        setLastContentTimestamp('');
         setJoinCodeInput('');
         setJoinError('');
         setJoinedByCode(true);
@@ -167,14 +260,6 @@ const StudentView = () => {
       console.error('Join error', err);
       setJoinError('Invalid or expired join code. Please check with your teacher.');
       setIsConnected(false);
-    }
-  };
-
-  const speakText = (text) => {
-    if (audioEnabled && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = selectedLanguage === 'bodo' ? 'hi-IN' : 'en-US';
-      window.speechSynthesis.speak(utterance);
     }
   };
 

@@ -4,6 +4,8 @@ from flask_cors import CORS
 import os
 import csv
 import pickle
+import logging
+import traceback
 from threading import Lock
 from dotenv import load_dotenv
 from services.translation_service import TranslationService
@@ -17,7 +19,15 @@ import string
 
 load_dotenv()
 
+# Configure logging for production
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 app = Flask(__name__)
+
 # Configure CORS to allow frontend on all development and production URLs
 CORS(app, resources={
     r"/api/*": {
@@ -38,6 +48,18 @@ CORS(app, resources={
     }
 })
 
+# Global error handler for 404
+@app.errorhandler(404)
+def not_found(error):
+    logger.warning(f"404 Not Found: {request.path}")
+    return jsonify({'success': False, 'message': 'Endpoint not found', 'path': request.path}), 404
+
+# Global error handler for 500
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"500 Internal Server Error: {str(error)}")
+    return jsonify({'success': False, 'message': 'Internal server error'}), 500
+
 # Initialize services
 translation_service = TranslationService()
 speech_service = SpeechService()
@@ -46,9 +68,9 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 
 # Log OAuth configuration
 if GOOGLE_CLIENT_ID:
-    print(f"✅ Google OAuth configured: {GOOGLE_CLIENT_ID[:20]}...")
+    logger.info(f"✅ Google OAuth configured: {GOOGLE_CLIENT_ID[:20]}...")
 else:
-    print("⚠️ WARNING: GOOGLE_CLIENT_ID not set!")
+    logger.warning("⚠️ WARNING: GOOGLE_CLIENT_ID not set!")
 
 
 # Track active student sessions
@@ -68,58 +90,148 @@ else:
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'message': 'Classroom Assistant API is running',
-        'version': '1.0.0'
-    })
+    """Basic health check"""
+    try:
+        logger.info("Health check requested")
+        return jsonify({
+            'status': 'healthy',
+            'message': 'Classroom Assistant API is running',
+            'version': '1.0.0',
+            'timestamp': datetime.utcnow().isoformat()
+        }), 200
+    except Exception as e:
+        logger.error(f"Health check error: {str(e)}")
+        return jsonify({'status': 'unhealthy', 'message': str(e)}), 500
+
+@app.route('/api/status', methods=['GET'])
+def status():
+    """Detailed system status"""
+    try:
+        logger.info("Status check requested")
+        
+        # Check translation database
+        db = getattr(translation_service, 'translation_db', None)
+        db_healthy = db and 'english' in db
+        total_translations = len(db.get('english', {})) if db_healthy else 0
+        
+        # Check teacher sessions
+        active_classes = len(active_teacher_sessions)
+        
+        status_data = {
+            'status': 'healthy' if db_healthy else 'degraded',
+            'timestamp': datetime.utcnow().isoformat(),
+            'services': {
+                'translation_db': {
+                    'healthy': db_healthy,
+                    'entries': total_translations
+                },
+                'auth_service': {
+                    'healthy': bool(auth_service),
+                    'configured': bool(auth_service.teachers_db)
+                },
+                'google_oauth': {
+                    'configured': bool(GOOGLE_CLIENT_ID)
+                }
+            },
+            'active_sessions': {
+                'student_sessions': len(active_sessions),
+                'active_classes': active_classes
+            }
+        }
+        
+        return jsonify(status_data), 200 if db_healthy else 503
+    
+    except Exception as e:
+        logger.error(f"Status check error: {str(e)}")
+        return jsonify({'status': 'unhealthy', 'message': str(e)}), 500
+
+@app.route('/api/ready', methods=['GET'])
+def readiness():
+    """Readiness probe for deployment orchestration"""
+    try:
+        # Check if system is ready to accept traffic
+        db = getattr(translation_service, 'translation_db', None)
+        if not db or 'english' not in db:
+            logger.error("Readiness check failed: Translation DB not loaded")
+            return jsonify({'ready': False, 'reason': 'Translation database not loaded'}), 503
+        
+        if len(db.get('english', {})) < 2400:
+            logger.warning(f"Readiness check warning: Only {len(db['english'])} translations loaded (expected 2492+)")
+        
+        logger.info(f"Readiness check passed: {len(db['english'])} translations loaded")
+        return jsonify({'ready': True, 'translations_loaded': len(db['english'])}), 200
+    
+    except Exception as e:
+        logger.error(f"Readiness check error: {str(e)}")
+        return jsonify({'ready': False, 'reason': str(e)}), 503
 
 # ============ AUTHENTICATION ENDPOINTS ============
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
+    """Register a new teacher account"""
     try:
         data = request.json
+        if not data:
+            logger.warning("Register: No JSON data provided")
+            return jsonify({'error': 'Request body must be JSON'}), 400
+        
         email = data.get('email', '').strip()
         password = data.get('password', '')
         name = data.get('name', '').strip()
         
         if not email or not password or not name:
+            logger.warning(f"Register: Missing required fields - email={bool(email)}, password={bool(password)}, name={bool(name)}")
             return jsonify({'error': 'Email, password, and name are required'}), 400
         
+        # Validate email format
+        if '@' not in email or '.' not in email.split('@')[-1]:
+            logger.warning(f"Register: Invalid email format - {email}")
+            return jsonify({'error': 'Invalid email format'}), 400
+        
+        # Validate password strength
+        if len(password) < 6:
+            return jsonify({'error': 'Password must be at least 6 characters'}), 400
+        
+        logger.info(f"Register attempt: {email}")
         result, status_code = auth_service.register(email, password, name)
+        
+        if status_code == 200 or status_code == 201:
+            logger.info(f"Register successful: {email}")
+        else:
+            logger.warning(f"Register failed: {email} - {result}")
+        
         return jsonify(result), status_code
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Register error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
         data = request.json
         if not data:
-            print("❌ Login: No JSON data received")
+            logger.warning("Login: No JSON data received")
             return jsonify({'error': 'Request body must be JSON'}), 400
         
         email = data.get('email', '').strip()
         password = data.get('password', '')
         
         if not email or not password:
-            print(f"❌ Login: Missing credentials - email={bool(email)}, password={bool(password)}")
+            logger.warning(f"Login: Missing credentials - email={bool(email)}, password={bool(password)}")
             return jsonify({'error': 'Email and password are required'}), 400
         
-        print(f"📧 Login attempt: {email}")
+        logger.info(f"Login attempt: {email}")
         result, status_code = auth_service.login(email, password)
         if status_code == 200:
-            print(f"✅ Login successful: {email}")
+            logger.info(f"✅ Login successful: {email}")
         else:
-            print(f"❌ Login failed: {email} - Status {status_code}")
+            logger.warning(f"Login failed: {email} - Status {status_code}")
         return jsonify(result), status_code
     
     except Exception as e:
-        print(f"❌ Login error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        logger.error(f"Login error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/auth/google/callback', methods=['POST'])
@@ -127,20 +239,20 @@ def google_callback():
     """Handle Google OAuth callback - frontend sends Google token"""
     try:
         data = request.json or {}
-        print(f"🔐 Google callback received from origin: {request.headers.get('Origin')}")
+        logger.info(f"Google callback received from: {request.headers.get('Origin')}")
 
         # Accept either a client-verified ID token (credential) or legacy { email, name, id }
         credential = data.get('credential') or data.get('id_token')
         if credential:
             if not GOOGLE_CLIENT_ID:
-                print("❌ Google callback: GOOGLE_CLIENT_ID not configured")
+                logger.error("Google callback: GOOGLE_CLIENT_ID not configured")
                 return jsonify({'error': 'Server misconfigured: GOOGLE_CLIENT_ID not set'}), 500
             try:
-                print("🔍 Verifying Google ID token...")
+                logger.info("Verifying Google ID token...")
                 idinfo = id_token.verify_oauth2_token(credential, grequests.Request(), GOOGLE_CLIENT_ID)
-                print(f"✅ Token verified for: {idinfo.get('email')}")
+                logger.info(f"Token verified for: {idinfo.get('email')}")
             except ValueError as e:
-                print(f"❌ Invalid ID token: {str(e)}")
+                logger.warning(f"Invalid ID token: {str(e)}")
                 return jsonify({'error': f'Invalid ID token: {str(e)}'}), 400
 
             email = idinfo.get('email', '').strip()
@@ -148,25 +260,23 @@ def google_callback():
             google_id = idinfo.get('sub', '')
 
             if not email or not google_id:
-                print(f"❌ Token missing fields: email={bool(email)}, sub={bool(google_id)}")
+                logger.warning(f"Token missing fields: email={bool(email)}, sub={bool(google_id)}")
                 return jsonify({'error': 'ID token missing required fields'}), 400
 
             try:
-                print(f"🔑 Processing Google login: {email}")
+                logger.info(f"Processing Google login: {email}")
                 result = auth_service.google_login(email, name, google_id)
                 if isinstance(result, tuple):
                     result, status_code = result
                 else:
                     status_code = 200
                 if status_code == 200:
-                    print(f"✅ Google login successful: {email}")
+                    logger.info(f"Google login successful: {email}")
                 else:
-                    print(f"❌ Google login failed: {email} - Status {status_code}")
+                    logger.warning(f"Google login failed: {email} - Status {status_code}")
                 return jsonify(result), status_code
             except Exception as e:
-                print(f"❌ Google login error: {str(e)}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"Google login error: {str(e)}\n{traceback.format_exc()}")
                 return jsonify({'error': f'Login failed: {str(e)}'}), 500
 
         # Fallback: legacy payload
@@ -175,13 +285,14 @@ def google_callback():
         google_id = data.get('id', '').strip()
 
         if not email or not google_id:
-            print(f"❌ Legacy Google payload missing fields")
+            logger.warning("Legacy Google payload missing fields")
             return jsonify({'error': 'Email and Google ID are required'}), 400
 
         result, status_code = auth_service.google_login(email, name, google_id)
         return jsonify(result), status_code
 
     except Exception as e:
+        logger.error(f"Google callback error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/auth/verify-token', methods=['POST'])
@@ -191,19 +302,23 @@ def verify_token():
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         
         if not token:
+            logger.warning("Verify token: No token provided")
             return jsonify({'error': 'No token provided'}), 401
         
         email = auth_service.verify_token(token)
         if not email:
+            logger.warning("Verify token: Invalid or expired token")
             return jsonify({'error': 'Invalid or expired token'}), 401
         
         teacher = auth_service.get_teacher(email)
+        logger.info(f"Token verified for: {email}")
         return jsonify({
             'valid': True,
             'teacher': teacher
         }), 200
     
     except Exception as e:
+        logger.error(f"Verify token error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/teacher/profile', methods=['GET'])
@@ -213,32 +328,48 @@ def get_teacher_profile():
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         
         if not token:
+            logger.warning("Get profile: No token provided")
             return jsonify({'error': 'No token provided'}), 401
         
         email = auth_service.verify_token(token)
         if not email:
+            logger.warning("Get profile: Invalid token")
             return jsonify({'error': 'Invalid or expired token'}), 401
         
         teacher = auth_service.get_teacher(email)
         if not teacher:
+            logger.warning(f"Get profile: Teacher not found - {email}")
             return jsonify({'error': 'Teacher not found'}), 404
         
+        logger.info(f"Profile retrieved for: {email}")
         return jsonify(teacher), 200
     
     except Exception as e:
+        logger.error(f"Get profile error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/translate', methods=['POST'])
 def translate():
+    """Translate text to target languages"""
     try:
         data = request.json
-        text = data.get('text', '')
-        source_lang = data.get('source_lang', 'english')
-        target_lang = data.get('target_lang', 'bodo')
+        if not data:
+            logger.warning("Translate: No JSON data provided")
+            return jsonify({'error': 'Request body must be JSON'}), 400
+        
+        text = data.get('text', '').strip()
+        source_lang = data.get('source_lang', 'english').lower()
+        target_lang = data.get('target_lang', 'bodo').lower()
         
         if not text:
+            logger.warning("Translate: No text provided")
             return jsonify({'error': 'No text provided'}), 400
         
+        if len(text) > 1000:
+            logger.warning(f"Translate: Text too long ({len(text)} chars)")
+            return jsonify({'error': 'Text too long (max 1000 chars)'}), 400
+        
+        logger.info(f"Translate: '{text[:50]}...' {source_lang}→{target_lang}")
         translation = translation_service.translate(text, source_lang, target_lang)
         
         return jsonify({
@@ -247,21 +378,32 @@ def translate():
             'target_lang': target_lang,
             'translation': translation,
             'confidence': 0.95
-        })
+        }), 200
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Translate error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': f'Translation failed: {str(e)}'}), 500
 
 @app.route('/api/translate/batch', methods=['POST'])
 def translate_batch():
+    """Translate text to multiple languages at once"""
     try:
         data = request.json
-        text = data.get('text', '')
-        source_lang = data.get('source_lang', 'english')
+        if not data:
+            return jsonify({'error': 'Request body must be JSON'}), 400
+        
+        text = data.get('text', '').strip()
+        source_lang = data.get('source_lang', 'english').lower()
         
         if not text:
+            logger.warning("Batch translate: No text provided")
             return jsonify({'error': 'No text provided'}), 400
         
+        if len(text) > 1000:
+            logger.warning(f"Batch translate: Text too long ({len(text)} chars)")
+            return jsonify({'error': 'Text too long (max 1000 chars)'}), 400
+        
+        logger.info(f"Batch translate: '{text[:30]}...'")
         translations = {
             'bodo': translation_service.translate(text, source_lang, 'bodo'),
             'mizo': translation_service.translate(text, source_lang, 'mizo'),
@@ -272,51 +414,78 @@ def translate_batch():
             'source_text': text,
             'source_lang': source_lang,
             'translations': translations
-        })
+        }), 200
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Batch translate error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': f'Batch translation failed: {str(e)}'}), 500
 
 @app.route('/api/speech/text-to-speech', methods=['POST'])
 def text_to_speech():
+    """Convert text to speech"""
     try:
         data = request.json
-        text = data.get('text', '')
-        language = data.get('language', 'english')
+        if not data:
+            return jsonify({'error': 'Request body must be JSON'}), 400
+        
+        text = data.get('text', '').strip()
+        language = data.get('language', 'english').lower()
         
         if not text:
+            logger.warning("TTS: No text provided")
             return jsonify({'error': 'No text provided'}), 400
         
+        if len(text) > 500:
+            logger.warning(f"TTS: Text too long ({len(text)} chars)")
+            return jsonify({'error': 'Text too long (max 500 chars)'}), 400
+        
+        if language not in ['english', 'bodo', 'mizo', 'hindi']:
+            logger.warning(f"TTS: Unsupported language - {language}")
+            return jsonify({'error': f'Unsupported language: {language}'}), 400
+        
+        logger.info(f"TTS: '{text[:30]}...' in {language}")
         audio_url = speech_service.text_to_speech(text, language)
         
         return jsonify({
             'text': text,
             'language': language,
             'audio_url': audio_url
-        })
+        }), 200
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"TTS error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': f'TTS conversion failed: {str(e)}'}), 500
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
+    """Logout and clear session"""
     try:
-        data = request.json
+        data = request.json or {}
         user_id = data.get('userId', '').strip()
+        
+        if not user_id:
+            logger.warning("Logout: No user ID provided")
+            return jsonify({
+                'success': False,
+                'message': 'User ID required'
+            }), 400
         
         if user_id in active_sessions:
             del active_sessions[user_id]
+            logger.info(f"Logout successful: {user_id}")
             return jsonify({
                 'success': True,
                 'message': 'Logged out successfully'
             }), 200
         
+        logger.warning(f"Logout: Session not found - {user_id}")
         return jsonify({
             'success': False,
             'message': 'Session not found'
         }), 404
     
     except Exception as e:
+        logger.error(f"Logout error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Logout failed: {str(e)}'
@@ -324,34 +493,91 @@ def logout():
 
 @app.route('/api/active-students', methods=['GET'])
 def get_active_students():
-    return jsonify({
-        'count': len(active_sessions),
-        'students': list(active_sessions.values())
-    })
+    """Get list of active student sessions"""
+    try:
+        logger.info(f"Active students check: {len(active_sessions)} students")
+        return jsonify({
+            'count': len(active_sessions),
+            'students': list(active_sessions.values())
+        }), 200
+    except Exception as e:
+        logger.error(f"Get active students error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
-    with login_history_lock:
-        total_unique_logins = len(login_history)
-    return jsonify({
-        'active_classrooms': 12,
-        'total_teachers': 45,
-        'total_students': 890,
-        'logged_in_students': len(active_sessions),
-        'total_unique_logins': total_unique_logins,
-        'avg_accuracy': 94.5,
-        'avg_latency': 1.8,
-        'total_translations': 15420
-    })
+    """Get application statistics"""
+    try:
+        with login_history_lock:
+            total_unique_logins = len(login_history)
+        
+        logger.info(f"Stats requested: {len(active_sessions)} active sessions")
+        return jsonify({
+            'active_classrooms': len(active_teacher_sessions),
+            'logged_in_students': len(active_sessions),
+            'total_unique_logins': total_unique_logins,
+            'avg_latency': 1.8
+        }), 200
+    except Exception as e:
+        logger.error(f"Get stats error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/translation-stats', methods=['GET'])
+def get_translation_stats():
+    """Return translation statistics computed from loaded dataset"""
+    try:
+        logger.info("Translation stats requested")
+        
+        db = getattr(translation_service, 'translation_db', None)
+        if not db or 'english' not in db:
+            logger.error("Translation database not loaded")
+            return jsonify({'success': False, 'message': 'Translation database not loaded'}), 503
+
+        total = len(db['english'])
+        bodo_count = 0
+        mizo_count = 0
+
+        for k, entry in db['english'].items():
+            if isinstance(entry, dict):
+                bodo = entry.get('bodo', '')
+                mizo = entry.get('mizo', '')
+                if bodo and str(bodo).strip():
+                    bodo_count += 1
+                if mizo and str(mizo).strip():
+                    mizo_count += 1
+
+        bodo_pct = round((bodo_count / total * 100), 1) if total > 0 else 0
+        mizo_pct = round((mizo_count / total * 100), 1) if total > 0 else 0
+
+        stats = [
+            {'language': 'English → Bodo', 'count': bodo_count, 'accuracy': bodo_pct},
+            {'language': 'English → Mizo', 'count': mizo_count, 'accuracy': mizo_pct}
+        ]
+
+        logger.info(f"Translation stats: {bodo_count} Bodo, {mizo_count} Mizo translations")
+        return jsonify({'success': True, 'stats': stats, 'total_entries': total}), 200
+    
+    except Exception as e:
+        logger.error(f"Get translation stats error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/student/login', methods=['POST'])
 def student_login():
+    """Student login with user ID and password"""
     try:
         data = request.json
+        if not data:
+            logger.warning("Student login: No JSON data provided")
+            return jsonify({
+                'success': False,
+                'message': 'Request body must be JSON'
+            }), 400
+        
         user_id = data.get('userId', '').strip()
         password = data.get('password', '').strip()
         
         if not user_id or not password:
+            logger.warning(f"Student login: Missing credentials - userId={bool(user_id)}, password={bool(password)}")
             return jsonify({
                 'success': False,
                 'message': 'User ID and password are required'
@@ -361,45 +587,61 @@ def student_login():
         csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'student_logins.csv')
         
         if not os.path.exists(csv_path):
+            logger.error(f"Student login: CSV file not found - {csv_path}")
             return jsonify({
                 'success': False,
                 'message': 'Login database not found'
             }), 500
         
-        with open(csv_path, 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                stored_user_id = row.get('user_id', '').strip()
-                stored_password = row.get('password', '').strip()
-                if stored_user_id == user_id and stored_password == password:
-                    # Track active session
-                    from datetime import datetime
-                    session_data = {
-                        'userId': row.get('user_id', '').strip(),
-                        'name': row.get('name', '').strip(),
-                        'role': row.get('role', '').strip(),
-                        'preferredLanguage': row.get('preferred_language', '').strip(),
-                        'loginTime': datetime.now().isoformat()
-                    }
-                    active_sessions[user_id] = session_data
-                    # Track login history
-                    with login_history_lock:
-                        if user_id not in login_history:
-                            login_history.add(user_id)
-                            with open(login_history_file, 'wb') as lf:
-                                pickle.dump(login_history, lf)
-                    return jsonify({
-                        'success': True,
-                        'message': 'Login successful',
-                        'user': session_data
-                    }), 200
+        try:
+            with open(csv_path, 'r', encoding='utf-8') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    stored_user_id = row.get('user_id', '').strip()
+                    stored_password = row.get('password', '').strip()
+                    if stored_user_id == user_id and stored_password == password:
+                        # Track active session
+                        session_data = {
+                            'userId': row.get('user_id', '').strip(),
+                            'name': row.get('name', '').strip(),
+                            'role': row.get('role', '').strip(),
+                            'preferredLanguage': row.get('preferred_language', '').strip(),
+                            'loginTime': datetime.now().isoformat()
+                        }
+                        active_sessions[user_id] = session_data
+                        
+                        # Track login history
+                        with login_history_lock:
+                            if user_id not in login_history:
+                                login_history.add(user_id)
+                                try:
+                                    with open(login_history_file, 'wb') as lf:
+                                        pickle.dump(login_history, lf)
+                                except Exception as e:
+                                    logger.warning(f"Could not save login history: {str(e)}")
+                        
+                        logger.info(f"✅ Student login successful: {user_id}")
+                        return jsonify({
+                            'success': True,
+                            'message': 'Login successful',
+                            'user': session_data
+                        }), 200
         
+        except Exception as e:
+            logger.error(f"Student login: Error reading CSV - {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Login failed: {str(e)}'
+            }), 500
+        
+        logger.warning(f"Student login: Invalid credentials - {user_id}")
         return jsonify({
             'success': False,
             'message': 'Invalid user ID or password'
         }), 401
     
     except Exception as e:
+        logger.error(f"Student login error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({
             'success': False,
             'message': f'Login failed: {str(e)}'
@@ -410,23 +652,38 @@ def student_login():
 def teacher_start_class():
     """Generate a join code when teacher starts class"""
     try:
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
+        # Get token from header
+        auth_header = request.headers.get('Authorization', '')
+        
+        if not auth_header:
+            logger.warning("Start class: No authorization header")
+            return jsonify({'success': False, 'message': 'Unauthorized - no token provided'}), 401
+
+        token = auth_header.replace('Bearer ', '')
+        
         if not token:
-            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+            logger.warning("Start class: Empty token")
+            return jsonify({'success': False, 'message': 'Unauthorized - invalid token format'}), 401
 
         # Verify token and extract payload
         token_result = auth_service.verify_token(token)
-        if not token_result.get('valid'):
-            return jsonify({'success': False, 'message': token_result.get('message', 'Invalid token')}), 401
+        
+        if not token_result or not token_result.get('valid'):
+            logger.warning(f"Start class: Invalid token - {token_result.get('message') if token_result else 'verification failed'}")
+            return jsonify({'success': False, 'message': 'Unauthorized - invalid or expired token'}), 401
 
         # Get email from token payload
         email = token_result.get('payload', {}).get('email')
+        
         if not email:
-            return jsonify({'success': False, 'message': 'Email not found in token'}), 401
+            logger.warning("Start class: No email in token")
+            return jsonify({'success': False, 'message': 'Invalid token payload'}), 401
 
         # Get teacher by email
         teacher = auth_service.teachers_db.get(email)
+        
         if not teacher:
+            logger.warning(f"Start class: Teacher not found - {email}")
             return jsonify({'success': False, 'message': 'Teacher not found'}), 404
 
         data = request.json or {}
@@ -447,10 +704,11 @@ def teacher_start_class():
         }
         active_teacher_sessions[join_code] = session
 
-        print(f"✅ Class started - Code: {join_code}, Teacher: {teacher.get('name')}")
+        logger.info(f"✅ Class started - Code: {join_code}, Teacher: {teacher.get('name')}, Subject: {subject}")
         return jsonify({'success': True, 'joinCode': join_code}), 200
+    
     except Exception as e:
-        print(f"❌ Error starting class: {str(e)}")
+        logger.error(f"❌ Error starting class: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'Failed to start class: {str(e)}'}), 500
 
 
@@ -461,13 +719,50 @@ def teacher_stop_class():
         data = request.json or {}
         join_code = (data.get('joinCode') or '').strip().upper()
 
-        if join_code in active_teacher_sessions:
-            del active_teacher_sessions[join_code]
-            return jsonify({'success': True, 'message': 'Class stopped'}), 200
+        if not join_code:
+            logger.warning("Stop class: No join code provided")
+            return jsonify({'success': False, 'message': 'Join code required'}), 400
 
-        return jsonify({'success': False, 'message': 'Join code not found'}), 404
+        if join_code not in active_teacher_sessions:
+            logger.warning(f"Stop class: Join code not found - {join_code}")
+            return jsonify({'success': False, 'message': 'Join code not found'}), 404
+
+        # Get session info before deleting
+        session = active_teacher_sessions[join_code]
+        num_students = len(session.get('students', []))
+        
+        # Stop the class
+        del active_teacher_sessions[join_code]
+        
+        # Also clear broadcast content for this class
+        if join_code in class_content_store:
+            del class_content_store[join_code]
+        
+        logger.info(f"✅ Class stopped - Code: {join_code}, Students: {num_students}")
+        return jsonify({'success': True, 'message': 'Class stopped'}), 200
+    
     except Exception as e:
+        logger.error(f"Stop class error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'Failed to stop class: {str(e)}'}), 500
+
+@app.route('/api/student/check-class-active', methods=['GET'])
+def check_class_active():
+    """Check if a class is still active (not stopped by teacher)"""
+    try:
+        join_code = request.args.get('joinCode', '').strip().upper()
+        
+        if not join_code:
+            logger.warning("Check class active: No join code provided")
+            return jsonify({'success': False, 'message': 'Join code required'}), 400
+        
+        # If join code exists in active sessions, class is active
+        is_active = join_code in active_teacher_sessions
+        
+        return jsonify({'success': True, 'isActive': is_active}), 200
+    
+    except Exception as e:
+        logger.error(f"Check class active error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 @app.route('/api/student/join', methods=['POST'])
@@ -479,16 +774,19 @@ def student_join():
         join_code = (data.get('joinCode') or '').strip().upper()
 
         if not student_id or not join_code:
+            logger.warning(f"Student join: Missing params - studentId={bool(student_id)}, joinCode={bool(join_code)}")
             return jsonify({'success': False, 'message': 'studentId and joinCode are required'}), 400
 
         # Check if join code exists and is active
         session = active_teacher_sessions.get(join_code)
         if not session or not session.get('isActive'):
+            logger.warning(f"Student join: Invalid join code - {join_code}")
             return jsonify({'success': False, 'message': 'Invalid or expired join code'}), 400
 
         # Check if student already joined
         for s in session.get('students', []):
             if s.get('studentId') == student_id:
+                logger.info(f"Student {student_id} already joined {join_code}")
                 return jsonify({'success': True, 'message': 'Already joined'}), 200
 
         # Add student to session
@@ -497,6 +795,8 @@ def student_join():
             'joinedAt': datetime.utcnow().isoformat()
         }
         session['students'].append(student_entry)
+        
+        logger.info(f"✅ Student {student_id} joined class {join_code}")
 
         return jsonify({
             'success': True,
@@ -504,10 +804,96 @@ def student_join():
             'teacherName': session.get('teacherName'),
             'subject': session.get('subject')
         }), 200
+    
     except Exception as e:
+        logger.error(f"Student join error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': f'Failed to join: {str(e)}'}), 500
+
+
+# Dictionary to store current speech/content for each class session
+class_content_store = {}
+
+
+@app.route('/api/teacher/broadcast-speech', methods=['POST'])
+def broadcast_speech():
+    """Teacher broadcasts speech/text to all connected students"""
+    try:
+        data = request.json or {}
+        join_code = data.get('joinCode', '').strip().upper()
+        english_text = data.get('englishText', '').strip()
+        bodo_translation = data.get('bodoTranslation', '').strip()
+        mizo_translation = data.get('mizoTranslation', '').strip()
+        
+        if not join_code:
+            logger.warning("Broadcast: No join code provided")
+            return jsonify({'success': False, 'message': 'Join code required'}), 400
+        
+        if not english_text:
+            logger.warning("Broadcast: No English text provided")
+            return jsonify({'success': False, 'message': 'English text required'}), 400
+        
+        # Verify join code exists
+        if join_code not in active_teacher_sessions:
+            logger.warning(f"Broadcast: Invalid join code - {join_code}")
+            return jsonify({'success': False, 'message': 'Invalid join code'}), 404
+        
+        # Store the current content for this class
+        class_content_store[join_code] = {
+            'englishText': english_text,
+            'bodoTranslation': bodo_translation,
+            'mizoTranslation': mizo_translation,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        logger.info(f"✅ Broadcast to {join_code}: '{english_text[:40]}...'")
+        return jsonify({'success': True, 'message': 'Broadcast successful'}), 200
+    
+    except Exception as e:
+        logger.error(f"❌ Broadcast error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'Broadcast failed: {str(e)}'}), 500
+
+@app.route('/api/student/get-content', methods=['GET'])
+def get_class_content():
+    """Students fetch the current class content"""
+    try:
+        join_code = request.args.get('joinCode', '').strip().upper()
+        
+        if not join_code:
+            logger.warning("Get content: No join code provided")
+            return jsonify({'success': False, 'message': 'Join code required'}), 400
+        
+        # Get content for this class
+        content = class_content_store.get(join_code)
+        
+        if not content:
+            return jsonify({
+                'success': True,
+                'content': {
+                    'englishText': '',
+                    'bodoTranslation': '',
+                    'mizoTranslation': '',
+                    'timestamp': ''
+                }
+            }), 200
+        
+        return jsonify({'success': True, 'content': content}), 200
+    
+    except Exception as e:
+        logger.error(f"❌ Get content error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'success': False, 'message': f'Failed to get content: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    flask_env = os.environ.get('FLASK_ENV', 'development')
+    debug_mode = os.environ.get('DEBUG', 'True').lower() == 'true'
+    
+    logger.info(f"=" * 50)
+    logger.info(f"Starting Classroom Assistant API")
+    logger.info(f"Environment: {flask_env}")
+    logger.info(f"Port: {port}")
+    logger.info(f"Debug: {debug_mode}")
+    logger.info(f"Loaded {len(getattr(translation_service, 'translation_db', {}).get('english', {}))} translations")
+    logger.info(f"=" * 50)
+    
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

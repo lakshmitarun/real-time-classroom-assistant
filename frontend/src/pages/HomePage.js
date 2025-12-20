@@ -6,7 +6,6 @@ import './HomePage.css';
 const HomePage = () => {
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Check if teacher is logged in
@@ -20,7 +19,6 @@ const HomePage = () => {
         console.error('Failed to parse teacher data:', err);
       }
     }
-    setLoading(false);
   }, []);
 
   const handleLogout = () => {

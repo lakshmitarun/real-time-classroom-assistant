@@ -116,6 +116,33 @@ const TeacherDashboard = () => {
     }
   };
 
+  // Broadcast speech to students
+  const broadcastToStudents = async (english, bodo, mizo) => {
+    if (!joinCode || !english.trim()) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/teacher/broadcast-speech`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          joinCode: joinCode,
+          englishText: english,
+          bodoTranslation: bodo,
+          mizoTranslation: mizo
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        console.log('✅ Broadcast sent to students');
+      } else {
+        console.log('⚠️ Broadcast failed:', data.message);
+      }
+    } catch (error) {
+      console.error('❌ Broadcast error:', error);
+    }
+  };
+
   const translateText = async (text) => {
     if (!text) {
       setBodoTranslation('');
@@ -148,16 +175,26 @@ const TeacherDashboard = () => {
       const data = await response.json();
       console.log('Translation response:', data);
       
+      let bodo = '';
+      let mizo = '';
+      
       if (data.translations && data.translations.bodo) {
-        setBodoTranslation(data.translations.bodo);
+        bodo = data.translations.bodo;
+        setBodoTranslation(bodo);
       } else {
         setBodoTranslation('— (not found in dataset)');
       }
       
       if (data.translations && data.translations.mizo) {
-        setMizoTranslation(data.translations.mizo);
+        mizo = data.translations.mizo;
+        setMizoTranslation(mizo);
       } else {
         setMizoTranslation('— (not found in dataset)');
+      }
+      
+      // Broadcast to students
+      if (classActive && joinCode) {
+        broadcastToStudents(text, bodo, mizo);
       }
     } catch (error) {
       console.error('❌ Translation error:', error);
