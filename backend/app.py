@@ -88,7 +88,8 @@ def internal_error(error):
     logger.error(f"500 Internal Server Error: {str(error)}")
     return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
-try:# Initialize services
+# Initialize services
+try:
 
     translation_service = TranslationService()
     speech_service = SpeechService()
