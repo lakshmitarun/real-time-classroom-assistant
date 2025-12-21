@@ -19,13 +19,13 @@ class AuthService:
             if os.path.exists(self.teachers_file):
                 with open(self.teachers_file, 'r', encoding='utf-8') as f:
                     teachers = json.load(f)
-                    print(f"✓ Teachers loaded from local file: {len(teachers)} records")
+                    print(f"[OK] Teachers loaded from local file: {len(teachers)} records")
                     return teachers
             else:
-                print("⚠️ Teachers file not found, starting with empty database")
+                print("[WARNING] Teachers file not found, starting with empty database")
                 return {}
         except Exception as e:
-            print(f"❌ Error loading teachers: {e}")
+            print(f"[ERROR] Error loading teachers: {e}")
             return {}
     
     def _save_teachers(self):
@@ -36,7 +36,7 @@ class AuthService:
                 json.dump(self.teachers_db, f, indent=2, ensure_ascii=False)
             return True
         except Exception as e:
-            print(f"❌ Error saving teachers: {e}")
+            print(f"[ERROR] Error saving teachers: {e}")
             return False
     
     def hash_password(self, password):

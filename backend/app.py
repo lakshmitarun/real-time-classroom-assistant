@@ -94,9 +94,9 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 
 # Log OAuth configuration
 if GOOGLE_CLIENT_ID:
-    logger.info(f"✅ Google OAuth configured: {GOOGLE_CLIENT_ID[:20]}...")
+    logger.info(f"[OK] Google OAuth configured: {GOOGLE_CLIENT_ID[:20]}...")
 else:
-    logger.warning("⚠️ WARNING: GOOGLE_CLIENT_ID not set!")
+    logger.warning("[WARNING] GOOGLE_CLIENT_ID not set!")
 
 
 # Track active student sessions
