@@ -94,7 +94,7 @@ def internal_error(error):
         speech_service = SpeechService()
         auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
         GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
-        except Exception as e:
+    except Exception as e:
     logger.error(f"Error initializing services: {str(e)}")
     translation_service = None
     speech_service = None
