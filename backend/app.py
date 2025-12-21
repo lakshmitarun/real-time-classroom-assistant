@@ -88,11 +88,17 @@ def internal_error(error):
     logger.error(f"500 Internal Server Error: {str(error)}")
     return jsonify({'success': False, 'message': 'Internal server error'}), 500
 
-# Initialize services
-translation_service = TranslationService()
-speech_service = SpeechService()
-auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+try:# Initialize services
+
+    translation_service = TranslationService()
+    speech_service = SpeechService()
+    auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+    except Exception as e:
+            logger.error(f"Failed to initialize services: {str(e)}")
+            translation_service = None
+            speech_service = None
+            auth_service = None
 
 # Log OAuth configuration
 if GOOGLE_CLIENT_ID:
