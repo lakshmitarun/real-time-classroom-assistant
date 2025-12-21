@@ -43,6 +43,8 @@ ALLOWED_ORIGINS = [
     "https://real-time-classroom-assistant-2ze2pt6u7.vercel.app",
     "https://real-time-classroom-assistant-n4yjfaano.vercel.app",
     "https://classroom-assistant-frontend.vercel.app",
+        "https://real-time-classroom-assistant-dc1mdzsl5.vercel.app",
+        "https://real-time-classroom-assistant.vercel.app",
 ]
 
 # Add custom origins from environment variable if set
