@@ -74,7 +74,7 @@ def check_origin(origin):
     logger.warning(f"[CORS] Rejecting origin: {origin}")
     return False
 
-# Use CORS with wildcard to allow all, then handle in middleware
+# Configure CORS for all routes - simpler configuration for Vercel
 CORS(app, 
     resources={
         r"/api/*": {
@@ -82,13 +82,15 @@ CORS(app,
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
             "expose_headers": ["Content-Type"],
-            "supports_credentials": False,  # Required when using "*"
-            "max_age": 3600
+            "supports_credentials": False,
+            "max_age": 3600,
+            "send_wildcard": True
         }
-    }
+    },
+    intercept_exceptions=False
 )
 
-# Handle preflight requests explicitly with dynamic origin support
+# Handle preflight requests explicitly
 @app.before_request
 def handle_preflight():
     """Handle CORS preflight requests"""
@@ -96,31 +98,31 @@ def handle_preflight():
         origin = request.headers.get("Origin")
         response = jsonify({'status': 'ok'})
         
-        if origin:
-            response.headers["Access-Control-Allow-Origin"] = origin
-        else:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            
+        # Always return proper CORS headers
+        response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
         response.headers["Access-Control-Max-Age"] = "3600"
+        response.headers["Content-Type"] = "application/json"
         
-        logger.info(f"[PREFLIGHT] {origin} - OK")
+        logger.info(f"[PREFLIGHT] {origin} => Allowed")
         return response, 200
 
 @app.after_request
 def add_cors_headers(response):
-    """Add CORS headers to all responses"""
+    """Add CORS headers to ALL responses"""
     origin = request.headers.get("Origin")
     
-    if origin:
-        response.headers["Access-Control-Allow-Origin"] = origin
-    else:
-        response.headers["Access-Control-Allow-Origin"] = "*"
-    
+    # Always set CORS headers
+    response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
     response.headers["Access-Control-Expose-Headers"] = "Content-Type"
+    response.headers["Vary"] = "Origin"
+    
+    # Ensure Content-Type is set
+    if not response.headers.get("Content-Type"):
+        response.headers["Content-Type"] = "application/json"
     
     return response
 
