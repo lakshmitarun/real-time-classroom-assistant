@@ -10,7 +10,7 @@ from threading import Lock
 from dotenv import load_dotenv
 from services.translation_service import TranslationService
 from services.speech_service import SpeechService
-from auth_service import AuthService, token_required
+from auth_service_mongodb import AuthServiceMongoDB, token_required
 from google.oauth2 import id_token
 from google.auth.transport import requests as grequests
 from datetime import datetime
@@ -43,54 +43,127 @@ ALLOWED_ORIGINS = [
     "https://real-time-classroom-assistant-2ze2pt6u7.vercel.app",
     "https://real-time-classroom-assistant-n4yjfaano.vercel.app",
     "https://classroom-assistant-frontend.vercel.app",
+    "https://real-time-classroom-assistant-dc1mdzsl5.vercel.app",
+    "https://real-time-classroom-assistant.vercel.app",
 ]
 
 # Add custom origins from environment variable if set
 if os.getenv('CORS_ORIGINS'):
     ALLOWED_ORIGINS.extend(os.getenv('CORS_ORIGINS', '').split(','))
 
+def check_origin(origin):
+    """Check if origin is allowed, including dynamic dev tunnel URLs"""
+    if not origin:
+        return True
+    # Allow all known origins
+    if origin in ALLOWED_ORIGINS:
+        return True
+    # Allow all dev tunnel origins dynamically
+    if 'devtunnels.ms' in origin:
+        logger.info(f"[CORS] Allowing dev tunnel: {origin}")
+        return True
+    # Allow localhost variants
+    if 'localhost' in origin or '127.0.0.1' in origin:
+        return True
+    logger.warning(f"[CORS] Rejecting origin: {origin}")
+    return False
+
+# Use CORS with wildcard to allow all, then handle in middleware
 CORS(app, 
     resources={
         r"/api/*": {
-            "origins": ALLOWED_ORIGINS,
+            "origins": "*",
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
             "expose_headers": ["Content-Type"],
-            "supports_credentials": True,
+            "supports_credentials": False,  # Required when using "*"
             "max_age": 3600
         }
     }
 )
 
-# Handle preflight requests explicitly
+# Handle preflight requests explicitly with dynamic origin support
 @app.before_request
 def handle_preflight():
+    """Handle CORS preflight requests"""
     if request.method == "OPTIONS":
+        origin = request.headers.get("Origin")
         response = jsonify({'status': 'ok'})
-        response.headers.add("Access-Control-Allow-Origin", request.headers.get("Origin", "*"))
-        response.headers.add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept")
-        response.headers.add("Access-Control-Max-Age", "3600")
-        response.headers.add("Access-Control-Allow-Credentials", "true")
+        
+        if origin:
+            response.headers["Access-Control-Allow-Origin"] = origin
+        else:
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+        response.headers["Access-Control-Max-Age"] = "3600"
+        
+        logger.info(f"[PREFLIGHT] {origin} - OK")
         return response, 200
+
+@app.after_request
+def add_cors_headers(response):
+    """Add CORS headers to all responses"""
+    origin = request.headers.get("Origin")
+    
+    if origin:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        response.headers["Access-Control-Allow-Origin"] = "*"
+    
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+    response.headers["Access-Control-Expose-Headers"] = "Content-Type"
+    
+    return response
 
 # Global error handler for 404
 @app.errorhandler(404)
 def not_found(error):
-    logger.warning(f"404 Not Found: {request.path}")
-    return jsonify({'success': False, 'message': 'Endpoint not found', 'path': request.path}), 404
+    logger.warning(f"404 Not Found: {request.method} {request.path}")
+    response = jsonify({
+        'success': False,
+        'error': 'Endpoint not found',
+        'path': request.path,
+        'method': request.method
+    })
+    response.status_code = 404
+    response.headers['Content-Type'] = 'application/json'
+    return response
 
 # Global error handler for 500
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f"500 Internal Server Error: {str(error)}")
-    return jsonify({'success': False, 'message': 'Internal server error'}), 500
+    logger.error(f"500 Internal Server Error: {str(error)}\n{traceback.format_exc()}")
+    response = jsonify({
+        'success': False,
+        'error': 'Internal server error',
+        'message': str(error) if app.debug else 'An error occurred'
+    })
+    response.status_code = 500
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
+# Ensure all responses have correct Content-Type
+@app.after_request
+def set_json_response_headers(response):
+    """Ensure all API responses have proper JSON headers"""
+    if request.path.startswith('/api/'):
+        response.headers['Content-Type'] = 'application/json'
+    return response
 
 # Initialize services
-translation_service = TranslationService()
-speech_service = SpeechService()
-auth_service = AuthService(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+try:
+    translation_service = TranslationService()
+    speech_service = SpeechService()
+    auth_service = AuthServiceMongoDB(secret_key=os.getenv('JWT_SECRET_KEY', 'classroom-assistant-secret-key'))
+    GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+except Exception as e:
+    logger.error(f"Error initializing services: {str(e)}")
+    translation_service = None
+    speech_service = None
+    auth_service = None
 
 # Log OAuth configuration
 if GOOGLE_CLIENT_ID:
@@ -153,7 +226,7 @@ def status():
                 },
                 'auth_service': {
                     'healthy': bool(auth_service),
-                    'configured': bool(auth_service.teachers_db)
+                    'configured': bool(auth_service.collection) if auth_service else False
                 },
                 'google_oauth': {
                     'configured': bool(GOOGLE_CLIENT_ID)
@@ -530,6 +603,33 @@ def get_active_students():
         logger.error(f"Get active students error: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/classrooms', methods=['GET'])
+def get_classrooms():
+    """Get list of active classrooms"""
+    try:
+        logger.info(f"🔍 Classrooms endpoint called - {len(active_teacher_sessions)} active sessions")
+        classrooms = []
+        for join_code, session in active_teacher_sessions.items():
+            classroom = {
+                'joinCode': join_code,
+                'teacher': session.get('teacherName', 'Unknown'),
+                'subject': session.get('subject', 'General'),
+                'students': len(session.get('students', [])),
+                'startTime': session.get('createdAt', ''),
+                'status': 'active' if session.get('isActive', True) else 'ended'
+            }
+            classrooms.append(classroom)
+            logger.info(f"  📍 Classroom: {classroom}")
+        
+        logger.info(f"✅ Returning {len(classrooms)} active classrooms")
+        return jsonify({
+            'count': len(classrooms),
+            'classrooms': classrooms
+        }), 200
+    except Exception as e:
+        logger.error(f"Get classrooms error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
     """Get application statistics"""
@@ -537,12 +637,35 @@ def get_stats():
         with login_history_lock:
             total_unique_logins = len(login_history)
         
-        logger.info(f"Stats requested: {len(active_sessions)} active sessions")
+        # Get total teachers from MongoDB
+        total_teachers = 0
+        try:
+            if auth_service and auth_service.collection:
+                total_teachers = auth_service.collection.count_documents({})
+        except Exception as e:
+            logger.warning(f"Could not count teachers: {str(e)}")
+        
+        # Get total students from CSV
+        total_students = 0
+        try:
+            csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'classroom_dataset_complete.csv')
+            if os.path.exists(csv_path):
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    total_students = sum(1 for _ in reader)
+        except Exception as e:
+            logger.warning(f"Could not count students: {str(e)}")
+        
+        logger.info(f"Stats requested: {len(active_sessions)} active sessions, {total_teachers} teachers, {total_students} students")
         return jsonify({
             'active_classrooms': len(active_teacher_sessions),
+            'total_teachers': total_teachers,
+            'total_students': total_students,
             'logged_in_students': len(active_sessions),
             'total_unique_logins': total_unique_logins,
-            'avg_latency': 1.8
+            'avg_accuracy': 0,
+            'avg_latency': 1.8,
+            'total_translations': 0
         }), 200
     except Exception as e:
         logger.error(f"Get stats error: {str(e)}\n{traceback.format_exc()}")
@@ -589,7 +712,7 @@ def get_translation_stats():
 
 @app.route('/api/student/login', methods=['POST'])
 def student_login():
-    """Student login with user ID and password"""
+    """Student login with user ID and password (MongoDB)"""
     try:
         data = request.json
         if not data:
@@ -609,62 +732,39 @@ def student_login():
                 'message': 'User ID and password are required'
             }), 400
         
-        # Load student logins from CSV
-        csv_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'student_logins.csv')
+        logger.info(f"Student login attempt from MongoDB: {user_id}")
         
-        if not os.path.exists(csv_path):
-            logger.error(f"Student login: CSV file not found - {csv_path}")
+        # Use MongoDB for authentication
+        if not auth_service:
+            logger.error("Student login: Auth service not initialized")
             return jsonify({
                 'success': False,
-                'message': 'Login database not found'
+                'message': 'Authentication service unavailable'
             }), 500
         
-        try:
-            with open(csv_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    stored_user_id = row.get('user_id', '').strip()
-                    stored_password = row.get('password', '').strip()
-                    if stored_user_id == user_id and stored_password == password:
-                        # Track active session
-                        session_data = {
-                            'userId': row.get('user_id', '').strip(),
-                            'name': row.get('name', '').strip(),
-                            'role': row.get('role', '').strip(),
-                            'preferredLanguage': row.get('preferred_language', '').strip(),
-                            'loginTime': datetime.now().isoformat()
-                        }
-                        active_sessions[user_id] = session_data
-                        
-                        # Track login history
-                        with login_history_lock:
-                            if user_id not in login_history:
-                                login_history.add(user_id)
-                                try:
-                                    with open(login_history_file, 'wb') as lf:
-                                        pickle.dump(login_history, lf)
-                                except Exception as e:
-                                    logger.warning(f"Could not save login history: {str(e)}")
-                        
-                        logger.info(f"✅ Student login successful: {user_id}")
-                        return jsonify({
-                            'success': True,
-                            'message': 'Login successful',
-                            'user': session_data
-                        }), 200
+        result, status_code = auth_service.student_login(user_id, password)
         
-        except Exception as e:
-            logger.error(f"Student login: Error reading CSV - {str(e)}")
-            return jsonify({
-                'success': False,
-                'message': f'Login failed: {str(e)}'
-            }), 500
+        if status_code == 200:
+            # Track active session
+            session_data = result.get('user', {})
+            session_data['loginTime'] = datetime.now().isoformat()
+            active_sessions[user_id] = session_data
+            
+            # Track login history
+            with login_history_lock:
+                if user_id not in login_history:
+                    login_history.add(user_id)
+                    try:
+                        with open(login_history_file, 'wb') as lf:
+                            pickle.dump(login_history, lf)
+                    except Exception as e:
+                        logger.warning(f"Could not save login history: {str(e)}")
+            
+            logger.info(f"Student login successful: {user_id}")
+        else:
+            logger.warning(f"Student login failed: {user_id} - Status {status_code}")
         
-        logger.warning(f"Student login: Invalid credentials - {user_id}")
-        return jsonify({
-            'success': False,
-            'message': 'Invalid user ID or password'
-        }), 401
+        return jsonify(result), status_code
     
     except Exception as e:
         logger.error(f"Student login error: {str(e)}\n{traceback.format_exc()}")
@@ -691,26 +791,38 @@ def teacher_start_class():
             logger.warning("Start class: Empty token")
             return jsonify({'success': False, 'message': 'Unauthorized - invalid token format'}), 401
 
-        # Verify token and extract payload
-        token_result = auth_service.verify_token(token)
-        
-        if not token_result or not token_result.get('valid'):
-            logger.warning(f"Start class: Invalid token - {token_result.get('message') if token_result else 'verification failed'}")
-            return jsonify({'success': False, 'message': 'Unauthorized - invalid or expired token'}), 401
+        # ✅ DEVELOPMENT MODE: Accept mock tokens
+        flask_env = os.environ.get('FLASK_ENV', 'development')
+        if flask_env == 'development' and token.startswith('mock-'):
+            logger.info(f"✅ Development mode: Accepting mock token")
+            # Use a default demo teacher for mock auth
+            email = 'demo.teacher@example.com'
+            teacher = {
+                'id': 'mock-teacher-id',
+                'name': 'Demo Teacher',
+                'email': email
+            }
+        else:
+            # Verify token and extract payload
+            token_result = auth_service.verify_token(token)
+            
+            if not token_result or not token_result.get('valid'):
+                logger.warning(f"Start class: Invalid token - {token_result.get('message') if token_result else 'verification failed'}")
+                return jsonify({'success': False, 'message': 'Unauthorized - invalid or expired token'}), 401
 
-        # Get email from token payload
-        email = token_result.get('payload', {}).get('email')
-        
-        if not email:
-            logger.warning("Start class: No email in token")
-            return jsonify({'success': False, 'message': 'Invalid token payload'}), 401
+            # Get email from token payload
+            email = token_result.get('payload', {}).get('email')
+            
+            if not email:
+                logger.warning("Start class: No email in token")
+                return jsonify({'success': False, 'message': 'Invalid token payload'}), 401
 
-        # Get teacher by email
-        teacher = auth_service.teachers_db.get(email)
-        
-        if not teacher:
-            logger.warning(f"Start class: Teacher not found - {email}")
-            return jsonify({'success': False, 'message': 'Teacher not found'}), 404
+            # Get teacher by email from MongoDB
+            teacher = auth_service.collection.find_one({'email': email})
+            
+            if not teacher:
+                logger.warning(f"Start class: Teacher not found - {email}")
+                return jsonify({'success': False, 'message': 'Teacher not found'}), 404
 
         data = request.json or {}
         subject = (data.get('subject') or 'General').strip()

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, MicOff, Download, Home, Play, Square } from 'lucide-react';
-import API_BASE_URL from '../config/api';
+import { safeFetch } from '../utils/apiClient';
 import './TeacherDashboard.css';
 
 const TeacherDashboard = () => {
@@ -41,25 +41,22 @@ const TeacherDashboard = () => {
       console.log('🎓 Starting class...');
       console.log('Token available:', !!token);
       
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const response = await fetch(`${API_BASE_URL}/api/teacher/start-class`, {
+      // ✅ Use safeFetch with proper error handling
+      const result = await safeFetch('/api/teacher/start-class', {
         method: 'POST',
-        headers,
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: JSON.stringify({ subject: 'General' })
       });
       
-      console.log('Start class response status:', response.status);
-      const data = await response.json();
-      console.log('Start class response data:', data);
+      if (!result.ok) {
+        console.error('❌ Failed to start class:', result.error);
+        alert(`Failed to start class: ${result.error}`);
+        return;
+      }
       
-      if (data.success) {
+      const data = result.data;
+      
+      if (data.success || data.joinCode) {
         setJoinCode(data.joinCode || '');
         setJoinMessage('Share this code with students');
         console.log('✅ Class started with code:', data.joinCode);
@@ -86,22 +83,13 @@ const TeacherDashboard = () => {
       const token = localStorage.getItem('token');
       console.log('🛑 Stopping class...');
       if (joinCode) {
-        const headers = {
-          'Content-Type': 'application/json'
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/api/teacher/stop-class`, {
+        // ✅ Use safeFetch with proper error handling
+        const result = await safeFetch('/api/teacher/stop-class', {
           method: 'POST',
-          headers,
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
           body: JSON.stringify({ joinCode })
         });
-        console.log('Stop class response status:', response.status);
-        const data = await response.json();
-        console.log('Stop class response:', data);
+        console.log('Stop class response:', result);
       }
     } catch (err) {
       console.error('❌ Error stopping class:', err);
@@ -131,9 +119,9 @@ const TeacherDashboard = () => {
     if (!joinCode || !english.trim()) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/teacher/broadcast-speech`, {
+      // ✅ Use safeFetch with proper error handling
+      const result = await safeFetch('/api/teacher/broadcast-speech', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           joinCode: joinCode,
           englishText: english,
@@ -142,11 +130,10 @@ const TeacherDashboard = () => {
         })
       });
       
-      const data = await response.json();
-      if (data.success) {
+      if (result.ok) {
         console.log('✅ Broadcast sent to students');
       } else {
-        console.log('⚠️ Broadcast failed:', data.message);
+        console.log('⚠️ Broadcast failed:', result.error);
       }
     } catch (error) {
       console.error('❌ Broadcast error:', error);
@@ -163,9 +150,10 @@ const TeacherDashboard = () => {
     try {
       console.log('🔤 Translating text:', text);
       const startTime = performance.now();
-      const response = await fetch(`${API_BASE_URL}/api/translate/batch`, {
+      
+      // ✅ Use safeFetch with proper error handling
+      const result = await safeFetch('/api/translate/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: text.trim(),
           source_lang: 'english'
@@ -176,13 +164,14 @@ const TeacherDashboard = () => {
       const responseTime = ((endTime - startTime) / 1000).toFixed(1);
       setLatency(responseTime);
       
-      console.log('Translation response status:', response.status);
-      
-      if (!response.ok) {
-        throw new Error(`Translation API failed: ${response.status}`);
+      if (!result.ok) {
+        console.error('Translation failed:', result.error);
+        setBodoTranslation('');
+        setMizoTranslation('');
+        return;
       }
       
-      const data = await response.json();
+      const data = result.data;
       console.log('Translation response:', data);
       
       let bodo = '';
@@ -263,7 +252,21 @@ Mizo Translation: ${mizoTranslation}
           {joinCode && (
             <div className="status-item">
               <strong>Join Code: {joinCode}</strong> {joinMessage && <span>{joinMessage}</span>}
-              <button className="btn btn-sm" onClick={() => navigator.clipboard?.writeText(joinCode)}>Copy</button>
+              <button className="btn btn-sm" onClick={async () => {
+                try {
+                  await navigator.clipboard?.writeText(joinCode);
+                  alert('Join code copied!');
+                } catch (err) {
+                  // Fallback for when clipboard API fails
+                  const textArea = document.createElement('textarea');
+                  textArea.value = joinCode;
+                  document.body.appendChild(textArea);
+                  textArea.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(textArea);
+                  alert('Join code copied!');
+                }
+              }}>Copy</button>
             </div>
           )}
           <div className="status-item">

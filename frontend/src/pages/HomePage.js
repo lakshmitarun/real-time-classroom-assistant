@@ -58,7 +58,7 @@ const HomePage = () => {
           <div className="navbar-right">
             {teacher ? (
               <div className="navbar-auth">
-                <span className="teacher-name">Welcome, {teacher.name || 'Teacher'}! 👋</span>
+                <span className="teacher-name">Welcome, {teacher.name || teacher.email || 'Teacher'}! 👋</span>
                 <button 
                   className="btn btn-nav btn-dashboard"
                   onClick={() => navigate('/teacher-dashboard')}

@@ -22,17 +22,22 @@ const AdminDashboard = () => {
     totalTranslations: 0
   });
   const [activeStudents, setActiveStudents] = useState([]);
+  const [classrooms, setClassrooms] = useState([]);
   const [translationStats, setTranslationStats] = useState([]);
 
   // Fetch stats and active students on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, studentsRes, translationStatsRes] = await Promise.all([
+        const [statsRes, studentsRes, classroomsRes, translationStatsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/stats`),
           axios.get(`${API_BASE_URL}/api/active-students`),
+          axios.get(`${API_BASE_URL}/api/classrooms`),
           axios.get(`${API_BASE_URL}/api/translation-stats`)
         ]);
+        
+        console.log('📊 API Response - Classrooms:', classroomsRes.data);
+        console.log('📊 API Response - Stats:', statsRes.data);
         
         setStats({
           activeClassrooms: statsRes.data.active_classrooms,
@@ -46,6 +51,8 @@ const AdminDashboard = () => {
         });
         
         setActiveStudents(studentsRes.data.students);
+        setClassrooms(classroomsRes.data.classrooms || []);
+        console.log('✅ Classrooms state updated:', classroomsRes.data.classrooms || []);
         
         if (translationStatsRes && translationStatsRes.data && translationStatsRes.data.stats) {
           setTranslationStats(translationStatsRes.data.stats);
@@ -60,9 +67,6 @@ const AdminDashboard = () => {
     
     return () => clearInterval(interval);
   }, []);
-
-  // recentActivity kept empty; translationStats now fetched from backend
-  const recentActivity = [];
 
   const handleUploadDataset = () => {
     alert('Upload dataset functionality coming soon!');
@@ -275,21 +279,21 @@ const AdminDashboard = () => {
                       <th>Teacher</th>
                       <th>Subject</th>
                       <th>Students</th>
-                      <th>Time</th>
+                      <th>Start Time</th>
                       <th>Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {recentActivity.length > 0 ? (
-                      recentActivity.map((activity) => (
-                        <tr key={activity.id}>
-                          <td><strong>{activity.teacher}</strong></td>
-                          <td>{activity.class}</td>
-                          <td>{activity.students}</td>
-                          <td>{activity.time}</td>
+                    {classrooms.length > 0 ? (
+                      classrooms.map((classroom, index) => (
+                        <tr key={index}>
+                          <td><strong>{classroom.teacher}</strong></td>
+                          <td>{classroom.subject}</td>
+                          <td>{classroom.students}</td>
+                          <td>{new Date(classroom.startTime).toLocaleTimeString()}</td>
                           <td>
-                            <span className={`status-badge ${activity.status}`}>
-                              {activity.status === 'active' ? '● Active' : '○ Ended'}
+                            <span className={`status-badge ${classroom.status}`}>
+                              {classroom.status === 'active' ? '● Active' : '○ Ended'}
                             </span>
                           </td>
                         </tr>

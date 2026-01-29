@@ -44,8 +44,11 @@ function App() {
     ],
     {
       future: {
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
+        v7_startTransition: true,      // ✅ Wrap state updates in React.startTransition
+        v7_relativeSplatPath: true,    // ✅ Fix relative splat path resolution
+        v7_fetcherPersist: true,       // ✅ Prepare for fetcher persistence
+        v7_normalizeFormMethod: true,  // ✅ Normalize form methods
+        v7_skipActionErrorRevalidation: true,  // ✅ Skip re-validation on errors
       },
     }
   );
