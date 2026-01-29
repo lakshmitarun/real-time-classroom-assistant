@@ -1,0 +1,39 @@
+# Exclude node_modules - will be reinstalled
+node_modules
+
+# Exclude git files
+.git
+.gitignore
+
+# Exclude environment files (except .env.production)
+.env
+.env.local
+.env.*.local
+
+# Exclude development files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Exclude test files
+.test.js
+.test.tsx
+coverage
+
+# Exclude IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Exclude OS files
+.DS_Store
+Thumbs.db
+
+# DO NOT exclude build output
+# build/ should be included
+# .next/ should be included if using Next.js
+
+# Exclude documentation
+README.md
+CHANGELOG.md
