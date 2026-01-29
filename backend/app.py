@@ -46,6 +46,7 @@ ALLOWED_ORIGINS = [
     "https://real-time-classroom-assistant-dc1mdzsl5.vercel.app",
     "https://real-time-classroom-assistant.vercel.app",
     "https://real-time-classroom-assistant-ye11.vercel.app",
+    "https://real-time-classroom-git-d6393a-palivela-lakshmi-taruns-projects.vercel.app",
 ]
 
 # Add custom origins from environment variable if set
@@ -58,6 +59,10 @@ def check_origin(origin):
         return True
     # Allow all known origins
     if origin in ALLOWED_ORIGINS:
+        return True
+    # Allow all Vercel deployments dynamically
+    if 'vercel.app' in origin:
+        logger.info(f"[CORS] Allowing Vercel: {origin}")
         return True
     # Allow all dev tunnel origins dynamically
     if 'devtunnels.ms' in origin:
