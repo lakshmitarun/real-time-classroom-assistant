@@ -1,6 +1,5 @@
 
 from flask import Flask, request, jsonify, make_response
-from flask_cors import CORS
 import os
 import csv
 import pickle
@@ -86,66 +85,39 @@ def check_origin(origin):
 @app.before_request
 def handle_preflight():
     """Handle CORS preflight requests for OPTIONS method"""
-    origin = request.headers.get("Origin")
-    
-    # Log the request
-    logger.info(f"[CORS] {request.method} {request.path} from Origin: {origin}")
-    
     if request.method == "OPTIONS":
-        logger.info(f"[PREFLIGHT] Handling OPTIONS preflight request from {origin}")
+        origin = request.headers.get("Origin", "*")
+        logger.info(f"[PREFLIGHT] OPTIONS request from {origin}")
         
-        # Check if origin is allowed
-        if origin:
-            is_allowed = check_origin(origin)
-            logger.info(f"[PREFLIGHT] Origin {origin} allowed: {is_allowed}")
-        
-        # Return 204 No Content with CORS headers
+        # Return 204 No Content with ALL CORS headers
         response = make_response('', 204)
-        
-        if origin:
-            response.headers["Access-Control-Allow-Origin"] = origin
-        else:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-        
+        response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
         response.headers["Access-Control-Max-Age"] = "86400"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Vary"] = "Origin"
         
-        logger.info(f"[PREFLIGHT] ✅ Sending response with headers: Allow-Origin={response.headers.get('Access-Control-Allow-Origin')}")
-        return response
+        logger.info(f"[PREFLIGHT] ✅ Returning 204 with Allow-Origin: {origin}")
+        return response, 204
 
 @app.after_request
 def add_cors_headers(response):
     """Add CORS headers to ALL responses"""
-    origin = request.headers.get("Origin")
+    origin = request.headers.get("Origin", "*")
     
-    # Set CORS headers based on origin
-    if origin:
-        # Only set specific origin if it's in allowed list
-        if check_origin(origin):
-            response.headers["Access-Control-Allow-Origin"] = origin
-            logger.debug(f"[CORS] ✅ Set Allow-Origin: {origin}")
-        else:
-            response.headers["Access-Control-Allow-Origin"] = "*"
-            logger.warning(f"[CORS] ⚠️ Origin not in allowed list: {origin}, using wildcard")
-    else:
-        response.headers["Access-Control-Allow-Origin"] = "*"
-    
+    # Always set CORS headers - allow the requesting origin
+    response.headers["Access-Control-Allow-Origin"] = origin
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
     response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
     response.headers["Access-Control-Allow-Credentials"] = "true"
     response.headers["Access-Control-Max-Age"] = "86400"
     response.headers["Vary"] = "Origin"
-    response.headers["Cache-Control"] = "no-cache"
     
     # Ensure Content-Type is set
     if not response.headers.get("Content-Type"):
         response.headers["Content-Type"] = "application/json"
-    
-    return response
     
     return response
 
