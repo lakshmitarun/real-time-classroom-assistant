@@ -43,6 +43,7 @@ const StudentView = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+    console.log('Login attempt with API URL:', API_BASE_URL);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/api/student/login`, {
@@ -68,6 +69,12 @@ const StudentView = () => {
       console.error('Login error:', error);
       if (error.response && error.response.data) {
         setLoginError(error.response.data.message || 'Invalid user ID or password');
+      } else if (error.response && error.response.status === 404) {
+        setLoginError('Backend server not found. Please check if the server is running.');
+      } else if (error.message && error.message.includes('CORS')) {
+        setLoginError('CORS error: Backend server is not accepting requests from this domain.');
+      } else if (error.request && !error.response) {
+        setLoginError('Could not reach the backend server. Please check if the server is running.');
       } else {
         setLoginError('Login failed. Please make sure the backend server is running.');
       }

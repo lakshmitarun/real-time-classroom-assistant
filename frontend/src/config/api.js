@@ -1,8 +1,11 @@
 // API Configuration with Mock Fallback
 import mockAuthHandler from '../services/mockApi';
 
-// Get API URL from environment variable or mock by default for development
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Get API URL from environment variable or use defaults based on environment
+const API_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? 'https://classroom-assistant-backend.vercel.app' 
+    : 'http://localhost:5000');
 const USE_MOCK_API = process.env.REACT_APP_USE_MOCK === 'true' || false; // Disable mock by default to use real backend
 
 // Create a fetch wrapper that can use mock API
