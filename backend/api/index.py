@@ -10,5 +10,5 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import app
 
-# Export the Flask app for Vercel
-export = app
+# Vercel expects the WSGI app to be named 'app'
+# No need to reassign, just export the app directly

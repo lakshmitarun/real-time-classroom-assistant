@@ -94,18 +94,21 @@ CORS(app,
 @app.before_request
 def handle_preflight():
     """Handle CORS preflight requests"""
+    origin = request.headers.get("Origin", "unknown")
+    logger.info(f"[REQUEST] {request.method} {request.path} from {origin}")
+    
     if request.method == "OPTIONS":
-        origin = request.headers.get("Origin")
+        logger.info(f"[PREFLIGHT] Handling OPTIONS request from {origin}")
         response = jsonify({'status': 'ok'})
         
         # Always return proper CORS headers
-        response.headers["Access-Control-Allow-Origin"] = origin if origin else "*"
+        response.headers["Access-Control-Allow-Origin"] = origin if origin and origin != "unknown" else "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
         response.headers["Access-Control-Max-Age"] = "3600"
         response.headers["Content-Type"] = "application/json"
         
-        logger.info(f"[PREFLIGHT] {origin} => Allowed")
+        logger.info(f"[PREFLIGHT] Response headers set for {origin}")
         return response, 200
 
 @app.after_request
@@ -194,6 +197,20 @@ if os.path.exists(login_history_file):
         login_history = pickle.load(f)
 else:
     login_history = set()
+
+# Root route - shows the API is running
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint"""
+    return jsonify({
+        'message': 'Classroom Assistant API',
+        'status': 'running',
+        'endpoints': {
+            'health': '/api/health',
+            'student_login': '/api/student/login',
+            'teacher_login': '/api/auth/login'
+        }
+    }), 200
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
