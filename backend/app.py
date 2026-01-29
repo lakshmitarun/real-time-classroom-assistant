@@ -39,12 +39,13 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
-    # Production - Vercel (multiple deployments)
+    # Production - Main Vercel deployment
+    "https://real-time-classroom-assistant.vercel.app",
+    # Production - Vercel preview/alternative deployments
     "https://real-time-classroom-assistant-2ze2pt6u7.vercel.app",
     "https://real-time-classroom-assistant-n4yjfaano.vercel.app",
     "https://classroom-assistant-frontend.vercel.app",
     "https://real-time-classroom-assistant-dc1mdzsl5.vercel.app",
-    "https://real-time-classroom-assistant.vercel.app",
     "https://real-time-classroom-assistant-ye11.vercel.app",
     "https://real-time-classroom-git-d6393a-palivela-lakshmi-taruns-projects.vercel.app",
 ]
@@ -54,37 +55,38 @@ if os.getenv('CORS_ORIGINS'):
     ALLOWED_ORIGINS.extend(os.getenv('CORS_ORIGINS', '').split(','))
 
 def check_origin(origin):
-    """Check if origin is allowed, including dynamic dev tunnel URLs"""
+    """Check if origin is allowed"""
     if not origin:
         return True
     # Allow all known origins
     if origin in ALLOWED_ORIGINS:
+        logger.info(f"[CORS] ✅ Allowed origin: {origin}")
         return True
     # Allow all Vercel deployments dynamically
     if 'vercel.app' in origin:
-        logger.info(f"[CORS] Allowing Vercel: {origin}")
+        logger.info(f"[CORS] ✅ Allowed Vercel domain: {origin}")
         return True
     # Allow all dev tunnel origins dynamically
     if 'devtunnels.ms' in origin:
-        logger.info(f"[CORS] Allowing dev tunnel: {origin}")
+        logger.info(f"[CORS] ✅ Allowed dev tunnel: {origin}")
         return True
     # Allow localhost variants
     if 'localhost' in origin or '127.0.0.1' in origin:
+        logger.info(f"[CORS] ✅ Allowed localhost: {origin}")
         return True
-    logger.warning(f"[CORS] Rejecting origin: {origin}")
+    logger.warning(f"[CORS] ❌ Rejected origin: {origin}")
     return False
 
-# Configure CORS for all routes - simpler configuration for Vercel
+# Configure CORS for all routes with proper production settings
 CORS(app, 
     resources={
         r"/api/*": {
-            "origins": "*",
+            "origins": ALLOWED_ORIGINS,  # Use specific origins instead of "*"
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "expose_headers": ["Content-Type"],
-            "supports_credentials": False,
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,  # Allow credentials (cookies, auth headers)
             "max_age": 3600,
-            "send_wildcard": True
         }
     },
     intercept_exceptions=False
