@@ -1,15 +1,5 @@
 {
-  "projects": [
-    {
-      "src": "frontend",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
   "buildCommand": "npm run build",
-  "installCommand": "npm install",
   "outputDirectory": "build",
   "rewrites": [
     {
