@@ -4,19 +4,19 @@
   "description": "Real-Time Classroom Assistant for Bodo and Mizo languages",
   "private": true,
   "dependencies": {
+    "@react-oauth/google": "^0.8.0",
+    "axios": "^1.6.0",
+    "lucide-react": "^0.300.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
     "react-scripts": "5.0.1",
-    "axios": "^1.6.0",
     "recharts": "^2.10.0",
-    "lucide-react": "^0.300.0",
-    "@react-oauth/google": "^0.8.0",
     "web-vitals": "^3.5.0"
   },
   "scripts": {
-    "dev": "PORT=3001 react-scripts start",
-    "start": "PORT=3001 react-scripts start",
+    "dev": "cross-env PORT=3001 react-scripts start",
+    "start": "cross-env PORT=3001 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -37,5 +37,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }

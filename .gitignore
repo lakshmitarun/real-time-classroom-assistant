@@ -19,6 +19,18 @@ yarn-error.log*
 *.swo
 *~
 
+# Package lock files (optional)
+package-lock.json
+yarn.lock
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+
 # Testing
 coverage/
 
