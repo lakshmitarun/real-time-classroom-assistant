@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Volume2, VolumeX, LogIn } from 'lucide-react';
+import { Home, Volume2, VolumeX, LogIn, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import './StudentView.css';
@@ -9,6 +9,7 @@ const StudentView = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginForm, setLoginForm] = useState({ userId: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [studentData, setStudentData] = useState(null);
   const [selectedLanguage, setSelectedLanguage] = useState('bodo');
@@ -291,13 +292,23 @@ const StudentView = () => {
               </div>
               <div className="form-group">
                 <label>Password</label>
-                <input
-                  type="password"
-                  placeholder="Enter password"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  required
-                />
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="btn-toggle-password"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
               {loginError && <div className="error-message">{loginError}</div>}
               <button type="submit" className="btn btn-login-primary">

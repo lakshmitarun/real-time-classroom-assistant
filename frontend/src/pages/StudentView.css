@@ -55,6 +55,39 @@
   border-color: #667eea;
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #667eea;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.btn-toggle-password:hover {
+  color: #5568d3;
+}
+
+.btn-toggle-password:active {
+  transform: scale(0.95);
+}
+
 .error-message {
   background: #fee2e2;
   color: #dc2626;

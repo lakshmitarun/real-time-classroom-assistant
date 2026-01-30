@@ -275,6 +275,33 @@
   cursor: not-allowed;
 }
 
+.btn-toggle-password-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #999;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+  margin-left: 8px;
+  flex-shrink: 0;
+}
+
+.btn-toggle-password-icon:hover:not(:disabled) {
+  color: #667eea;
+}
+
+.btn-toggle-password-icon:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-toggle-password-icon:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
 /* ========== BUTTONS ========== */
 .btn {
   padding: 14px 24px;

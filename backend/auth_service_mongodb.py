@@ -77,9 +77,9 @@ class AuthServiceMongoDB:
                 'id': teacher_id,
                 'email': email,
                 'name': name,
-                'password_hash': self.hash_password(password),
+                'password': password,
                 'auth_method': 'email',
-                'created_at': datetime.utcnow().isoformat(),
+                'created_at': datetime.now().isoformat(),
                 'last_login': None,
                 'google_id': None
             }
@@ -111,13 +111,16 @@ class AuthServiceMongoDB:
             if not teacher:
                 return {'success': False, 'message': 'Invalid email or password'}, 401
             
-            if not self.verify_password(password, teacher['password_hash']):
+            # Compare plain text passwords
+            stored_password = teacher.get('password', '')
+            if password.strip() != stored_password:
                 return {'success': False, 'message': 'Invalid email or password'}, 401
             
-            # Update last login
+            # Update last login with current local time
+            current_time = datetime.now().isoformat()
             self.collection.update_one(
                 {'_id': teacher['_id']},
-                {'$set': {'last_login': datetime.utcnow().isoformat()}}
+                {'$set': {'last_login': current_time}}
             )
             
             # Generate JWT token
@@ -183,8 +186,8 @@ class AuthServiceMongoDB:
                     'google_id': google_id,
                     'auth_method': 'google',
                     'password_hash': '',
-                    'created_at': datetime.utcnow().isoformat(),
-                    'last_login': datetime.utcnow().isoformat()
+                    'created_at': datetime.now().isoformat(),
+                    'last_login': datetime.now().isoformat()
                 }
                 
                 result = self.collection.insert_one(new_teacher)
@@ -290,7 +293,7 @@ class AuthServiceMongoDB:
                 'password_hash': self.hash_password(password),
                 'preferred_language': preferred_language,
                 'role': 'student',
-                'created_at': datetime.utcnow().isoformat(),
+                'created_at': datetime.now().isoformat(),
                 'last_login': None
             }
             

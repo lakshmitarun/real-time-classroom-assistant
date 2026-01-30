@@ -357,6 +357,43 @@ def login():
         logger.error(f"Login error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
+@app.route('/api/auth/check-last-login', methods=['POST'])
+def check_last_login():
+    """DEBUG endpoint: Check last login for a teacher"""
+    try:
+        data = request.json or {}
+        email = data.get('email', '').strip()
+        
+        if not email:
+            logger.warning("Check last login: No email provided")
+            return jsonify({'error': 'Email is required'}), 400
+        
+        logger.info(f"Checking last login for: {email}")
+        
+        # Get teacher directly from MongoDB
+        teacher = auth_service.collection.find_one({'email': email})
+        if not teacher:
+            logger.warning(f"Check last login: Teacher not found - {email}")
+            return jsonify({
+                'success': False,
+                'message': 'Teacher not found',
+                'email': email
+            }), 404
+        
+        logger.info(f"Last login for {email}: {teacher.get('last_login')}")
+        return jsonify({
+            'success': True,
+            'email': email,
+            'name': teacher.get('name'),
+            'last_login': teacher.get('last_login'),
+            'created_at': teacher.get('created_at'),
+            'auth_method': teacher.get('auth_method')
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Check last login error: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/auth/google/callback', methods=['POST'])
 def google_callback():
     """Handle Google OAuth callback - frontend sends Google token"""
@@ -774,6 +811,15 @@ def student_login():
             if student:
                 # Found in database - return real student data
                 logger.info(f"✅ Student found in DB: {user_id} - {student.get('name', 'N/A')}")
+                
+                # ✅ UPDATE LAST LOGIN TIMESTAMP
+                current_time = datetime.now().isoformat()
+                student_collection.update_one(
+                    {'user_id': user_id},
+                    {'$set': {'last_login': current_time}}
+                )
+                logger.info(f"✅ Updated last_login for {user_id}: {current_time}")
+                
                 session_data = {
                     'userId': user_id,
                     'name': student.get('name', user_id),  # Use REAL name from DB

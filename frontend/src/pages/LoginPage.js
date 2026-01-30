@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, LogIn, User, Globe, BookOpen, Shield } from 'lucide-react';
+import { Mail, Lock, LogIn, User, Globe, BookOpen, Shield, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { safeFetch } from '../utils/apiClient';
 import API_BASE_URL from '../config/api';
@@ -23,6 +23,8 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -345,7 +347,7 @@ const LoginPage = () => {
               <div className="input-group">
                 <Lock size={18} />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   id="password"
                   name="password"
                   placeholder="Enter your password"
@@ -354,6 +356,15 @@ const LoginPage = () => {
                   disabled={loading}
                   required
                 />
+                <button
+                  type="button"
+                  className="btn-toggle-password-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  disabled={loading}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
             </div>
 
@@ -364,7 +375,7 @@ const LoginPage = () => {
                 <div className="input-group">
                   <Lock size={18} />
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     id="confirmPassword"
                     name="confirmPassword"
                     placeholder="Confirm your password"
@@ -373,6 +384,15 @@ const LoginPage = () => {
                     disabled={loading}
                     required
                   />
+                  <button
+                    type="button"
+                    className="btn-toggle-password-icon"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    disabled={loading}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
             )}
