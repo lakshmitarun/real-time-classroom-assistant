@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, Volume2, VolumeX, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Home, LogIn, Eye, EyeOff } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import './StudentView.css';
@@ -14,17 +14,17 @@ const StudentView = () => {
   const [loginError, setLoginError] = useState('');
   const [studentData, setStudentData] = useState(null);
 
-  const [selectedLanguage, setSelectedLanguage] = useState('bodo');
-  const [englishSubtitle, setEnglishSubtitle] = useState('');
-  const [translatedSubtitle, setTranslatedSubtitle] = useState('');
-  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState('bodo'); // eslint-disable-line no-unused-vars
+  const [englishSubtitle, setEnglishSubtitle] = useState(''); // eslint-disable-line no-unused-vars
+  const [translatedSubtitle, setTranslatedSubtitle] = useState(''); // eslint-disable-line no-unused-vars
+  const [audioEnabled, setAudioEnabled] = useState(true); // eslint-disable-line no-unused-vars
   const [isConnected, setIsConnected] = useState(false);
 
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
-  const [joinedByCode, setJoinedByCode] = useState(false);
-  const [currentJoinCode, setCurrentJoinCode] = useState('');
-  const [lastContentTimestamp, setLastContentTimestamp] = useState('');
+  const [joinedByCode, setJoinedByCode] = useState(false); // eslint-disable-line no-unused-vars
+  const [currentJoinCode, setCurrentJoinCode] = useState(''); // eslint-disable-line no-unused-vars
+  const [lastContentTimestamp, setLastContentTimestamp] = useState(''); // eslint-disable-line no-unused-vars
 
   // =========================
   // RESTORE SESSION
@@ -108,6 +108,7 @@ const StudentView = () => {
   // =========================
   // TEXT TO SPEECH
   // =========================
+  // eslint-disable-next-line no-unused-vars
   const speakText = (text) => {
     if (!audioEnabled || !('speechSynthesis' in window)) return;
 
