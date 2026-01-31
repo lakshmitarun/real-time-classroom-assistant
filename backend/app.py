@@ -427,33 +427,10 @@ def login_serverless():
         response.headers['Content-Type'] = 'application/json'
         
         return response
-
 @app.route('/api/auth/login-old', methods=['POST'])
 def login():
-    try:
-        data = request.json
-        if not data:
-            logger.warning("Login: No JSON data received")
-            return jsonify({'error': 'Request body must be JSON'}), 400
-        
-        email = data.get('email', '').strip()
-        password = data.get('password', '')
-        
-        if not email or not password:
-            logger.warning(f"Login: Missing credentials - email={bool(email)}, password={bool(password)}")
-            return jsonify({'error': 'Email and password are required'}), 400
-        
-        logger.info(f"Login attempt: {email}")
-        result, status_code = auth_service.login(email, password)
-        if status_code == 200:
-            logger.info(f"✅ Login successful: {email}")
-        else:
-            logger.warning(f"Login failed: {email} - Status {status_code}")
-        return jsonify(result), status_code
-    
-    except Exception as e:
-        logger.error(f"Login error: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({'error': f'Server error: {str(e)}'}), 500
+    """Old teacher login endpoint - use /api/auth/login instead"""
+    return jsonify({'error': 'Use /api/auth/login endpoint'}), 400
 
 @app.route('/api/auth/check-last-login', methods=['POST'])
 def check_last_login():
@@ -1019,68 +996,8 @@ def student_login_serverless():
 
 @app.route('/api/student/login-old', methods=['POST'])
 def student_login():
-                return jsonify({
-                    'success': True,
-                    'message': 'Login successful',
-                    'user': session_data,
-                    'token': demo_token
-                }), 200
-            
-            direct_client.close()
-        except Exception as e:
-            logger.warning(f"⚠️  Could not fetch from MongoDB: {str(e)}")
-        
-        # Fallback to demo mode if MongoDB not available
-        logger.info(f"Student login (FALLBACK): {user_id}")
-        demo_token = 'demo_token_' + user_id + '_' + str(int(datetime.now().timestamp()))
-        
-        # Generate a demo student name only as fallback
-        demo_names = ['Arjun Kumar', 'Priya Singh', 'Ravi Patel', 'Anjali Sharma', 'Vikram Gupta', 'Neha Verma', 'Aditya Rao', 'Pooja Nair']
-        demo_name = demo_names[hash(user_id) % len(demo_names)]
-        
-        session_data = {
-            'userId': user_id,
-            'name': demo_name,
-            'role': 'student',
-            'preferredLanguage': 'english'
-        }
-        active_sessions[user_id] = session_data
-        
-        return jsonify({
-            'success': True,
-            'message': 'Fallback login (MongoDB unavailable)',
-            'user': session_data,
-            'token': demo_token
-        }), 200
-        
-        if status_code == 200:
-            # Track active session
-            session_data = result.get('user', {})
-            session_data['loginTime'] = datetime.now().isoformat()
-            active_sessions[user_id] = session_data
-            
-            # Track login history
-            with login_history_lock:
-                if user_id not in login_history:
-                    login_history.add(user_id)
-                    try:
-                        with open(login_history_file, 'wb') as lf:
-                            pickle.dump(login_history, lf)
-                    except Exception as e:
-                        logger.warning(f"Could not save login history: {str(e)}")
-            
-            logger.info(f"Student login successful: {user_id}")
-        else:
-            logger.warning(f"Student login failed: {user_id} - Status {status_code}")
-        
-        return jsonify(result), status_code
-    
-    except Exception as e:
-        logger.error(f"Student login error: {str(e)}\n{traceback.format_exc()}")
-        return jsonify({
-            'success': False,
-            'message': f'Login failed: {str(e)}'
-        }), 500
+    """Old student login endpoint - use /api/student/login instead"""
+    return jsonify({'error': 'Use /api/student/login endpoint'}), 400
 
 
 @app.route('/api/teacher/start-class', methods=['POST'])
