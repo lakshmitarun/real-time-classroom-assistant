@@ -100,18 +100,30 @@ def student_login():
                 "message": "User ID and password required"
             }), 400
 
-        # ✅ DEMO LOGIN (replace with DB later)
-        token = f"demo_{user_id}_{int(datetime.now().timestamp())}"
-
-        logger.info(f"✅ Student login successful: {user_id}")
-        
-        return jsonify({
-            "success": True,
-            "message": "Login successful",
-            "userId": user_id,
-            "role": "student",
-            "token": token
-        }), 200
+        # Try to fetch student from MongoDB
+        if auth_service:
+            logger.info(f"🔐 Authenticating student: {user_id}")
+            result, status_code = auth_service.student_login(user_id, password)
+            
+            if result.get("success"):
+                logger.info(f"✅ Student login successful: {user_id}")
+                return jsonify(result), status_code
+            else:
+                logger.warning(f"❌ Student login failed: {user_id} - {result.get('message')}")
+                return jsonify(result), status_code
+        else:
+            # Fallback: Demo login (for development/testing)
+            logger.warning(f"⚠️ Using fallback demo login for student: {user_id}")
+            token = f"demo_{user_id}_{int(datetime.now().timestamp())}"
+            
+            return jsonify({
+                "success": True,
+                "message": "Login successful (Fallback)",
+                "userId": user_id,
+                "name": f"Student {user_id}",  # Show student ID as name
+                "role": "student",
+                "token": token
+            }), 200
 
     except Exception as e:
         logger.error(traceback.format_exc())

@@ -71,12 +71,23 @@ const StudentView = () => {
       console.log('✅ Login Success:', response.data);
 
       if (response.data.success) {
-        const userData = response.data.user || response.data;
+        // Extract user data - backend returns: { success, message, userId, name, role, token }
+        const userData = {
+          userId: response.data.userId,
+          name: response.data.name || response.data.userId,  // Fallback to userId if name not provided
+          role: response.data.role || 'student',
+          token: response.data.token,
+          preferredLanguage: response.data.preferredLanguage
+        };
+        
+        console.log('📊 Student Data:', userData);
+        
         setStudentData(userData);
         setIsLoggedIn(true);
 
         localStorage.setItem('studentSession', JSON.stringify(userData));
-        localStorage.setItem('userRole', userData.role || 'student');
+        localStorage.setItem('userRole', userData.role);
+        localStorage.setItem('token', userData.token);
 
         if (userData.preferredLanguage) {
           setSelectedLanguage(userData.preferredLanguage.toLowerCase());
@@ -187,31 +198,43 @@ const StudentView = () => {
             <h2>Student Login</h2>
 
             <form onSubmit={handleLogin}>
-              <input
-                type="text"
-                placeholder="Roll Number"
-                value={loginForm.userId}
-                onChange={(e) => setLoginForm({ ...loginForm, userId: e.target.value })}
-                required
-              />
-
-              <div className="password-input-wrapper">
+              <div className="form-group">
+                <label>Roll Number</label>
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  type="text"
+                  placeholder="23B21A4501"
+                  value={loginForm.userId}
+                  onChange={(e) => setLoginForm({ ...loginForm, userId: e.target.value })}
                   required
                 />
-                <button type="button" onClick={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff /> : <Eye />}
-                </button>
+              </div>
+
+              <div className="form-group">
+                <label>Password</label>
+                <div className="password-input-wrapper">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Enter password"
+                    value={loginForm.password}
+                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                    required
+                  />
+                  <button 
+                    type="button" 
+                    className="btn-toggle-password"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
               </div>
 
               {loginError && <div className="error-message">{loginError}</div>}
 
               <button type="submit" className="btn btn-login-primary">
-                <LogIn /> Login
+                <LogIn size={20} />
+                Login
               </button>
             </form>
 
@@ -223,33 +246,53 @@ const StudentView = () => {
       ) : (
         <>
           <div className="top-bar">
-            <button onClick={() => navigate('/')}>
-              <Home />
-            </button>
+            <div className="top-bar-content">
+              <button className="btn-icon" onClick={() => navigate('/')} title="Home">
+                <Home size={24} />
+              </button>
 
-            <div>{studentData?.userId}</div>
+              <div className="student-info">
+                <span className="student-name">{studentData?.name || 'Student'}</span>
+                <span className="student-id">{studentData?.userId}</span>
+              </div>
 
-            <button onClick={handleLogout}>Logout</button>
+              <div className="connection-status">
+                <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
+                <span>{isConnected ? 'Connected' : 'Disconnected'}</span>
+              </div>
+
+              <button className="btn-icon" onClick={handleLogout} title="Logout">
+                <LogIn size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="subtitle-container">
             {isConnected ? (
-              <p>Connected successfully 🎉</p>
+              <div className="subtitle-box">
+                <p>Connected to classroom 🎉</p>
+              </div>
             ) : (
-              <p>Connect to classroom</p>
+              <div className="no-subtitles">
+                <p>Connect to classroom to see subtitles</p>
+              </div>
             )}
           </div>
 
           <div className="join-class-section card">
-            <input
-              type="text"
-              placeholder="Enter join code"
-              value={joinCodeInput}
-              onChange={(e) => setJoinCodeInput(e.target.value)}
-            />
-            <button className="btn btn-primary" onClick={handleJoinByCode}>
-              Join
-            </button>
+            <h3>Join Class</h3>
+            <div className="form-group">
+              <input
+                type="text"
+                placeholder="Enter join code"
+                value={joinCodeInput}
+                onChange={(e) => setJoinCodeInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+              />
+              <button className="btn btn-primary" onClick={handleJoinByCode}>
+                Join
+              </button>
+            </div>
             {joinError && <div className="error-message">{joinError}</div>}
           </div>
         </>
