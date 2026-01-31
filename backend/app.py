@@ -337,7 +337,98 @@ def register():
         logger.error(f"Register error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'error': f'Registration failed: {str(e)}'}), 500
 
-@app.route('/api/auth/login', methods=['POST'])
+# ============================================
+# SERVERLESS LOGIN ENDPOINT FOR VERCEL
+# Manual CORS headers for POST requests
+# ============================================
+@app.route('/api/auth/login', methods=['POST', 'OPTIONS'])
+def login_serverless():
+    """
+    Serverless-compatible login endpoint with explicit CORS headers
+    Handles both OPTIONS preflight and POST login requests
+    """
+    origin = request.headers.get('Origin')
+    
+    # ✅ Handle OPTIONS preflight request
+    if request.method == 'OPTIONS':
+        logger.debug(f"[LOGIN PREFLIGHT] OPTIONS request from {origin}")
+        response = make_response('', 204)
+        
+        # Set CORS headers for preflight
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+        
+        logger.info(f"[LOGIN PREFLIGHT] ✅ Sent 204 with CORS headers to {origin}")
+        return response, 204
+    
+    # ✅ Handle POST login request
+    try:
+        data = request.json
+        if not data:
+            logger.warning("Login: No JSON data received")
+            response = jsonify({'error': 'Request body must be JSON'})
+            response.status_code = 400
+            
+            # Add CORS headers to error response
+            response.headers['Access-Control-Allow-Origin'] = origin or '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Content-Type'] = 'application/json'
+            
+            return response
+        
+        email = data.get('email', '').strip()
+        password = data.get('password', '')
+        
+        if not email or not password:
+            logger.warning(f"Login: Missing credentials - email={bool(email)}, password={bool(password)}")
+            response = jsonify({'error': 'Email and password are required'})
+            response.status_code = 400
+            
+            response.headers['Access-Control-Allow-Origin'] = origin or '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Content-Type'] = 'application/json'
+            
+            return response
+        
+        logger.info(f"Login attempt: {email} from {origin}")
+        result, status_code = auth_service.login(email, password)
+        
+        # Create response with explicit CORS headers
+        response = jsonify(result)
+        response.status_code = status_code
+        
+        # ✅ Add CORS headers to login response
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['Vary'] = 'Origin'
+        
+        if status_code == 200:
+            logger.info(f"✅ Login successful: {email}")
+        else:
+            logger.warning(f"❌ Login failed: {email} - Status {status_code}")
+        
+        return response
+    
+    except Exception as e:
+        logger.error(f"Login error: {str(e)}\n{traceback.format_exc()}")
+        response = jsonify({'error': f'Server error: {str(e)}'})
+        response.status_code = 500
+        
+        # Add CORS headers to error response
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Content-Type'] = 'application/json'
+        
+        return response
+
+@app.route('/api/auth/login-old', methods=['POST'])
 def login():
     try:
         data = request.json
@@ -778,58 +869,92 @@ def get_translation_stats():
         logger.error(f"Get translation stats error: {str(e)}\n{traceback.format_exc()}")
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/api/student/login', methods=['POST'])
-def student_login():
-    """Student login with user ID and password (MongoDB or Demo Mode)"""
+@app.route('/api/student/login', methods=['POST', 'OPTIONS'])
+def student_login_serverless():
+    """
+    Serverless student login endpoint with explicit CORS headers
+    Handles both OPTIONS preflight and POST login requests
+    """
+    origin = request.headers.get('Origin')
+    
+    # ✅ Handle OPTIONS preflight request
+    if request.method == 'OPTIONS':
+        logger.debug(f"[STUDENT LOGIN PREFLIGHT] OPTIONS request from {origin}")
+        response = make_response('', 204)
+        
+        # Set CORS headers for preflight
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '86400'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Vary'] = 'Origin'
+        
+        logger.info(f"[STUDENT LOGIN PREFLIGHT] ✅ Sent 204 with CORS headers to {origin}")
+        return response, 204
+    
+    # ✅ Handle POST login request
     try:
         data = request.json
         if not data:
             logger.warning("Student login: No JSON data provided")
-            return jsonify({
+            response = jsonify({
                 'success': False,
                 'message': 'Request body must be JSON'
-            }), 400
+            })
+            response.status_code = 400
+            
+            # Add CORS headers
+            response.headers['Access-Control-Allow-Origin'] = origin or '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Content-Type'] = 'application/json'
+            
+            return response
         
         user_id = data.get('userId', '').strip()
         password = data.get('password', '').strip()
         
         if not user_id or not password:
             logger.warning(f"Student login: Missing credentials - userId={bool(user_id)}, password={bool(password)}")
-            return jsonify({
+            response = jsonify({
                 'success': False,
                 'message': 'User ID and password are required'
-            }), 400
+            })
+            response.status_code = 400
+            
+            response.headers['Access-Control-Allow-Origin'] = origin or '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Content-Type'] = 'application/json'
+            
+            return response
         
-        logger.info(f"Student login attempt: {user_id}")
+        logger.info(f"Student login attempt: {user_id} from {origin}")
         
-        # Always try to fetch from MongoDB directly (bypass auth_service)
+        # MongoDB connection for student data
         try:
             from pymongo import MongoClient
             mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
             db_name = os.getenv('MONGODB_DATABASE', 'classroomassisstant')
             
-            # Create a direct connection to get student data
             direct_client = MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)
             direct_db = direct_client[db_name]
             student_collection = direct_db['student']
             
-            # Try to find student in database
+            # Find student
             student = student_collection.find_one({'user_id': user_id})
             if student:
-                # Found in database - return real student data
-                logger.info(f"✅ Student found in DB: {user_id} - {student.get('name', 'N/A')}")
+                logger.info(f"✅ Student found in DB: {user_id}")
                 
-                # ✅ UPDATE LAST LOGIN TIMESTAMP
+                # Update last login
                 current_time = datetime.now().isoformat()
                 student_collection.update_one(
                     {'user_id': user_id},
                     {'$set': {'last_login': current_time}}
                 )
-                logger.info(f"✅ Updated last_login for {user_id}: {current_time}")
                 
                 session_data = {
                     'userId': user_id,
-                    'name': student.get('name', user_id),  # Use REAL name from DB
+                    'name': student.get('name', user_id),
                     'role': 'student',
                     'preferredLanguage': student.get('preferred_language', 'english')
                 }
@@ -837,6 +962,63 @@ def student_login():
                 demo_token = 'demo_token_' + user_id + '_' + str(int(datetime.now().timestamp()))
                 
                 direct_client.close()
+                
+                # Create response
+                response = jsonify({
+                    'success': True,
+                    'message': 'Login successful',
+                    'userId': user_id,
+                    'name': session_data['name'],
+                    'role': 'student',
+                    'token': demo_token,
+                    'preferredLanguage': session_data['preferredLanguage']
+                })
+                response.status_code = 200
+                
+                # ✅ Add CORS headers
+                response.headers['Access-Control-Allow-Origin'] = origin or '*'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                response.headers['Access-Control-Expose-Headers'] = 'Content-Type, Authorization'
+                response.headers['Content-Type'] = 'application/json'
+                response.headers['Vary'] = 'Origin'
+                
+                logger.info(f"✅ Student login successful: {user_id}")
+                return response
+            
+            direct_client.close()
+            
+        except Exception as db_error:
+            logger.warning(f"MongoDB error: {str(db_error)}")
+        
+        # Fallback or error
+        response = jsonify({
+            'success': False,
+            'message': 'Invalid credentials'
+        })
+        response.status_code = 401
+        
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Content-Type'] = 'application/json'
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Student login error: {str(e)}\n{traceback.format_exc()}")
+        response = jsonify({
+            'success': False,
+            'message': f'Server error: {str(e)}'
+        })
+        response.status_code = 500
+        
+        response.headers['Access-Control-Allow-Origin'] = origin or '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Content-Type'] = 'application/json'
+        
+        return response
+
+@app.route('/api/student/login-old', methods=['POST'])
+def student_login():
                 return jsonify({
                     'success': True,
                     'message': 'Login successful',
