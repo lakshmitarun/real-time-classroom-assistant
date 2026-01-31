@@ -86,10 +86,15 @@ def check_origin(origin):
 def handle_preflight():
     """Handle CORS preflight requests for OPTIONS method"""
     if request.method == "OPTIONS":
-        origin = request.headers.get("Origin", "*")
+        origin = request.headers.get("Origin")
         logger.info(f"[PREFLIGHT] OPTIONS request from {origin}")
         
-        # Return 204 No Content with ALL CORS headers
+        # Check if origin is allowed
+        if not origin or not check_origin(origin):
+            logger.warning(f"[PREFLIGHT] ❌ Origin not allowed: {origin}")
+            return '', 403
+        
+        # Return 204 No Content with CORS headers
         response = make_response('', 204)
         response.headers["Access-Control-Allow-Origin"] = origin
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
@@ -104,16 +109,18 @@ def handle_preflight():
 @app.after_request
 def add_cors_headers(response):
     """Add CORS headers to ALL responses"""
-    origin = request.headers.get("Origin", "*")
+    origin = request.headers.get("Origin")
     
-    # Always set CORS headers - allow the requesting origin
-    response.headers["Access-Control-Allow-Origin"] = origin
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
-    response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    response.headers["Access-Control-Max-Age"] = "86400"
-    response.headers["Vary"] = "Origin"
+    # Only add CORS headers if origin is provided and allowed
+    if origin and check_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Max-Age"] = "86400"
+        response.headers["Vary"] = "Origin"
+        logger.debug(f"[CORS] Added headers for origin: {origin}")
     
     # Ensure Content-Type is set
     if not response.headers.get("Content-Type"):
