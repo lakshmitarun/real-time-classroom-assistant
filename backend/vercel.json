@@ -1,0 +1,17 @@
+{
+  "buildCommand": "pip install -r requirements.txt",
+  "outputDirectory": ".",
+  "env": {
+    "FLASK_ENV": "production",
+    "MONGODB_URI": "@mongodb_uri",
+    "MONGODB_DATABASE": "@mongodb_database",
+    "JWT_SECRET_KEY": "@jwt_secret_key",
+    "FRONTEND_URL": "@frontend_url",
+    "ALLOWED_ORIGINS": "@allowed_origins"
+  },
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.9"
+    }
+  }
+}

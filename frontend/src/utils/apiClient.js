@@ -1,83 +1,146 @@
 /**
- * Safe API Client - Handles JSON parse errors gracefully
- * Prevents "Unexpected token '<'" errors from non-JSON responses
+ * Production-ready API Client for Vercel Deployment
+ * - Handles CORS properly with credentials
+ * - Includes proper error handling
+ * - Supports authorization tokens
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+// Get API URL from environment or use defaults
+const getBackendUrl = () => {
+  const apiUrl = process.env.REACT_APP_API_URL ||
+    (process.env.NODE_ENV === 'production'
+      ? 'https://classroom-assistant-backend.vercel.app'  // ← UPDATE with YOUR backend URL
+      : 'http://localhost:5000');
+  
+  console.log('[API] Backend URL:', apiUrl);
+  return apiUrl;
+};
 
 /**
- * Safely fetch and parse JSON response
- * Falls back to mock data if real API fails in development
+ * Main API client - handles fetch with proper CORS headers
+ */
+export const apiClient = {
+  async fetch(endpoint, options = {}) {
+    const url = `${getBackendUrl()}${endpoint}`;
+    
+    console.log(`📤 [${options.method || 'GET'}] ${url}`);
+    
+    const config = {
+      method: options.method || 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      // ✅ CRITICAL for Vercel CORS with auth tokens
+      credentials: 'include',
+      ...options,
+    };
+
+    // Add authorization token if exists
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+      console.log('[API] Authorization token included');
+    }
+
+    try {
+      const response = await fetch(url, config);
+
+      console.log(`📥 [${response.status}] ${response.statusText}`);
+
+      // Log CORS headers for debugging
+      const corsOrigin = response.headers.get('Access-Control-Allow-Origin');
+      if (corsOrigin) {
+        console.log(`[CORS] Allow-Origin: ${corsOrigin}`);
+      }
+
+      // Handle different content types
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      return {
+        ok: response.ok,
+        status: response.status,
+        data: data,
+        headers: response.headers,
+      };
+    } catch (error) {
+      console.error(`❌ API Error: ${error.message}`);
+      throw new Error(`Network error: ${error.message}`);
+    }
+  },
+
+  // Convenience methods
+  post(endpoint, body, options = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  },
+
+  get(endpoint, options = {}) {
+    return this.fetch(endpoint, { ...options, method: 'GET' });
+  },
+
+  put(endpoint, body, options = {}) {
+    return this.fetch(endpoint, {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+  },
+
+  delete(endpoint, options = {}) {
+    return this.fetch(endpoint, { ...options, method: 'DELETE' });
+  },
+};
+
+/**
+ * Safe fetch wrapper with error handling
+ * Returns {ok, error, data} object
  */
 export const safeFetch = async (endpoint, options = {}) => {
   try {
-    const url = `${API_BASE_URL}${endpoint}`;
-    console.log(`📡 [API] ${options.method || 'GET'} ${endpoint}`);
-
-    // Merge headers properly - ensure Content-Type is always set
-    const mergedHeaders = {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers: mergedHeaders,
-    });
-
-    console.log(`   Status: ${response.status}`);
-
-    // Check if response is JSON
-    const contentType = response.headers.get('content-type');
-    const isJSON = contentType && contentType.includes('application/json');
-
-    if (!isJSON) {
-      // ❌ Non-JSON response (likely HTML error page)
-      const text = await response.text();
-      console.error(`❌ [API] Non-JSON response:`, text.substring(0, 100));
-      
-      throw new Error(
-        `Server returned ${response.status} with non-JSON response. ` +
-        `Endpoint: ${endpoint}. Response: ${text.substring(0, 100)}`
-      );
+    const result = await apiClient.fetch(endpoint, options);
+    
+    if (!result.ok) {
+      console.error(`[SafeFetch] Error: ${result.status}`, result.data);
+      return {
+        ok: false,
+        error: result.data?.error || result.data?.message || 'API Error',
+        data: null,
+      };
     }
 
-    // ✅ Parse JSON
-    const data = await response.json();
-
-    if (!response.ok) {
-      // ❌ API returned error (but in valid JSON)
-      console.error(`❌ [API] Error ${response.status}:`, data);
-      throw new Error(data.error || data.message || `API Error ${response.status}`);
-    }
-
-    // ✅ Success
-    console.log(`✅ [API] Success:`, data);
     return {
       ok: true,
-      status: response.status,
-      data,
+      error: null,
+      data: result.data,
     };
   } catch (error) {
-    console.error(`❌ [API] Exception:`, error.message);
-
-    // ⚠️ Fallback to mock data in development
+    console.error(`[SafeFetch] Exception:`, error);
+    
+    // Fallback to mock in development if enabled
     if (process.env.NODE_ENV === 'development' && process.env.REACT_APP_USE_MOCK === 'true') {
       console.warn(`⚠️ [API] Falling back to mock data`);
       return {
         ok: true,
-        status: 200,
-        data: {
-          success: true,
-          message: 'Mock data (API unavailable)',
-        },
+        error: null,
+        data: { success: true, message: 'Mock data (API unavailable)' },
       };
     }
 
     return {
       ok: false,
-      status: 0,
       error: error.message,
+      data: null,
     };
   }
 };
