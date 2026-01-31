@@ -36,7 +36,7 @@ CORS(
             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization", "Accept"],
             "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": False,
+            "supports_credentials": True,  # ✅ Enable credentials support
             "max_age": 86400
         }
     },
@@ -46,7 +46,7 @@ CORS(
         FRONTEND_URL,
         "*.vercel.app"
     ],
-    supports_credentials=False
+    supports_credentials=True  # ✅ Enable credentials support
 )
 
 logger.info("🔧 CORS Configuration:")
