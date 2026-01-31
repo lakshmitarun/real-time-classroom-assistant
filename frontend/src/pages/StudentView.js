@@ -134,6 +134,7 @@ const StudentView = () => {
       setIsLoggedIn(false);
       setStudentData(null);
       setIsConnected(false);
+      navigate('/');
     }
   };
 

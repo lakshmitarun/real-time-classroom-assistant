@@ -61,6 +61,8 @@ try:
     logger.info("✅ AuthServiceMongoDB initialized")
 except Exception as e:
     logger.warning(f"⚠️ AuthServiceMongoDB initialization failed: {e}")
+    logger.warning(f"⚠️ MONGODB_URI: {os.getenv('MONGODB_URI', 'NOT SET')}")
+    logger.warning(f"⚠️ MONGODB_DATABASE: {os.getenv('MONGODB_DATABASE', 'NOT SET')}")
     logger.warning("⚠️ Teacher login will use fallback demo mode")
     auth_service = None
 
