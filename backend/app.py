@@ -20,40 +20,64 @@ ALLOWED_ORIGINS = [
 ]
 
 def is_allowed_origin(origin):
+    """Check if origin is allowed for CORS"""
     if not origin:
         return False
+    
+    # Exact match
     if origin in ALLOWED_ORIGINS:
+        logger.info(f"✅ Origin allowed (exact match): {origin}")
         return True
+    
+    # Wildcard for all vercel.app domains
     if "vercel.app" in origin:
+        logger.info(f"✅ Origin allowed (vercel.app wildcard): {origin}")
         return True
+    
+    logger.warning(f"❌ Origin NOT allowed: {origin}")
     return False
 
 @app.before_request
 def handle_preflight():
+    """Handle CORS preflight requests (OPTIONS)"""
+    origin = request.headers.get("Origin")
+    
+    logger.info(f"📍 Request: {request.method} {request.path} | Origin: {origin}")
+    
+    # Handle OPTIONS preflight
     if request.method == "OPTIONS":
-        origin = request.headers.get("Origin")
-
+        logger.info(f"🔍 Preflight request for: {request.path}")
+        
         if not is_allowed_origin(origin):
+            logger.error(f"❌ Preflight rejected: Origin not allowed")
             return "", 403
-
+        
         response = make_response("", 204)
         response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+        response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
         response.headers["Vary"] = "Origin"
-        return response
+        
+        logger.info(f"✅ Preflight approved with CORS headers")
+        return response, 204
 
 @app.after_request
 def add_cors_headers(response):
+    """Add CORS headers to all responses"""
     origin = request.headers.get("Origin")
-
+    
+    # Add CORS headers if origin is allowed
     if origin and is_allowed_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
         response.headers["Vary"] = "Origin"
-
+    
+    # Ensure JSON responses have correct content type
     if request.path.startswith("/api/"):
         response.headers["Content-Type"] = "application/json"
-
+    
     return response
 
 # =============================
@@ -77,8 +101,14 @@ def health():
 # =============================
 # STUDENT LOGIN
 # =============================
-@app.route("/api/student/login", methods=["POST"])
+@app.route("/api/student/login", methods=["POST", "OPTIONS"])
 def student_login():
+    """Student login endpoint with CORS support"""
+    
+    # Preflight is handled by @app.before_request
+    if request.method == "OPTIONS":
+        return "", 204
+    
     try:
         data = request.json or {}
 
