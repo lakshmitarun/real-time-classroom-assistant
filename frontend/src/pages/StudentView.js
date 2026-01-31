@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Home, LogOut, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import './StudentView.css';
@@ -233,7 +233,7 @@ const StudentView = () => {
               {loginError && <div className="error-message">{loginError}</div>}
 
               <button type="submit" className="btn btn-login-primary">
-                <LogIn size={20} />
+                <ArrowRight size={20} />
                 Login
               </button>
             </form>
@@ -262,7 +262,7 @@ const StudentView = () => {
               </div>
 
               <button className="btn-icon" onClick={handleLogout} title="Logout">
-                <LogIn size={24} />
+                <LogOut size={24} />
               </button>
             </div>
           </div>
