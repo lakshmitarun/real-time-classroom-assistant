@@ -51,6 +51,9 @@ const StudentView = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+    console.log('🔐 Login Attempt:');
+    console.log('  - API URL:', API_BASE_URL);
+    console.log('  - User ID:', loginForm.userId.trim());
 
     try {
       const response = await axios.post(
@@ -60,9 +63,12 @@ const StudentView = () => {
           password: loginForm.password.trim()
         },
         {
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000 // 10 second timeout
         }
       );
+
+      console.log('✅ Login Success:', response.data);
 
       if (response.data.success) {
         const userData = response.data.user || response.data;
@@ -79,8 +85,23 @@ const StudentView = () => {
         setLoginError('Invalid credentials');
       }
     } catch (error) {
-      console.error(error);
-      setLoginError('Backend not reachable');
+      console.error('❌ Login Error Details:');
+      console.error('  - Message:', error.message);
+      console.error('  - Status:', error.response?.status);
+      console.error('  - Data:', error.response?.data);
+      console.error('  - Config URL:', error.config?.url);
+      
+      if (error.response?.status === 401) {
+        setLoginError('Invalid user ID or password');
+      } else if (error.response?.status === 404) {
+        setLoginError('Backend server not found. Check API URL: ' + API_BASE_URL);
+      } else if (error.code === 'ECONNABORTED') {
+        setLoginError('Request timeout - backend is slow or unreachable');
+      } else if (error.message === 'Network Error') {
+        setLoginError('Network error - check if backend is running at: ' + API_BASE_URL);
+      } else {
+        setLoginError('Backend not reachable. Error: ' + error.message);
+      }
     }
   };
 

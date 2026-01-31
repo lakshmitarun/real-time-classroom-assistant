@@ -1,35 +1,41 @@
-// API Configuration with Mock Fallback
-import mockAuthHandler from '../services/mockApi';
+/**
+ * API Configuration for Create React App
+ * 
+ * Environment Variable Priority:
+ * 1. REACT_APP_API_URL (set in .env or .env.production)
+ * 2. Default based on NODE_ENV
+ * 
+ * For Vercel Production:
+ *   - Set REACT_APP_API_URL = https://classroom-assistant-backend.vercel.app
+ * 
+ * For Local Development:
+ *   - REACT_APP_API_URL = http://localhost:5000
+ */
 
-// Get API URL from environment variable or use defaults based on environment
-const API_URL = process.env.REACT_APP_API_URL || 
-  (process.env.NODE_ENV === 'production' 
-    ? 'https://classroom-assistant-backend.vercel.app' 
-    : 'http://localhost:5000');
-const USE_MOCK_API = process.env.REACT_APP_USE_MOCK === 'true' || false; // Disable mock by default to use real backend
-
-// Create a fetch wrapper that can use mock API
-const fetchWithMock = async (url, options) => {
-  if (USE_MOCK_API && url.includes('/api/auth')) {
-    // Extract endpoint from full URL
-    const endpoint = url.replace(API_URL, '');
-    const body = options?.body ? JSON.parse(options.body) : {};
-    
-    try {
-      const mockResponse = await mockAuthHandler(endpoint, body);
-      return mockResponse;
-    } catch (error) {
-      console.error('Mock API error:', error);
-      throw error;
-    }
+// Determine the API URL
+const getApiUrl = () => {
+  // Priority 1: Environment variable
+  if (process.env.REACT_APP_API_URL) {
+    console.log('✅ Using REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    return process.env.REACT_APP_API_URL;
   }
   
-  // Fall back to real API
-  return fetch(url, options);
+  // Priority 2: Default based on environment
+  if (process.env.NODE_ENV === 'production') {
+    console.log('⚠️ Production mode: Using default backend URL');
+    return 'https://classroom-assistant-backend.vercel.app';
+  }
+  
+  // Local development
+  console.log('✅ Development mode: Using localhost backend');
+  return 'http://localhost:5000';
 };
 
-// Export both the base URL and the fetch wrapper
-export const API_BASE_URL = API_URL;
-export const customFetch = fetchWithMock;
+const API_BASE_URL = getApiUrl();
+
+console.log('🔧 API Config:');
+console.log('  - NODE_ENV:', process.env.NODE_ENV);
+console.log('  - API_BASE_URL:', API_BASE_URL);
+console.log('  - REACT_APP_API_URL:', process.env.REACT_APP_API_URL || '(not set)');
 
 export default API_BASE_URL;
