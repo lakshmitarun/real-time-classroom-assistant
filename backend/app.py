@@ -4,6 +4,7 @@ from datetime import datetime
 import logging
 import traceback
 import os
+from auth_service_mongodb import AuthServiceMongoDB
 
 # =============================
 # APP + LOGGING
@@ -53,6 +54,17 @@ logger.info(f"  Frontend URL: {FRONTEND_URL}")
 logger.info(f"  Allowed Origins: http://localhost:3001, {FRONTEND_URL}, *.vercel.app")
 
 # =============================
+# AUTH SERVICE
+# =============================
+try:
+    auth_service = AuthServiceMongoDB(secret_key=os.getenv('JWT_SECRET_KEY', 'your-secret-key'))
+    logger.info("✅ AuthServiceMongoDB initialized")
+except Exception as e:
+    logger.warning(f"⚠️ AuthServiceMongoDB initialization failed: {e}")
+    logger.warning("⚠️ Teacher login will use fallback demo mode")
+    auth_service = None
+
+# =============================
 # ROUTES
 # =============================
 
@@ -100,6 +112,65 @@ def student_login():
             "role": "student",
             "token": token
         }), 200
+
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Server error",
+            "error": str(e)
+        }), 500
+
+# =============================
+# TEACHER LOGIN
+# =============================
+@app.route("/api/auth/login", methods=["POST"])
+def teacher_login():
+    """Teacher login endpoint - Uses MongoDB auth"""
+    try:
+        data = request.json or {}
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+
+        if not email or not password:
+            return jsonify({
+                "success": False,
+                "message": "Email and password required"
+            }), 400
+
+        # Try real authentication first
+        if auth_service:
+            logger.info(f"🔐 Authenticating teacher: {email}")
+            result, status_code = auth_service.login(email, password)
+            
+            if result.get("success"):
+                logger.info(f"✅ Teacher login successful: {email}")
+                return jsonify(result), status_code
+            else:
+                logger.warning(f"❌ Teacher login failed: {email} - {result.get('message')}")
+                return jsonify(result), status_code
+        else:
+            # Fallback: Demo mode (for development/testing)
+            logger.warning(f"⚠️ Using fallback demo login for: {email}")
+            token = f"demo_{email}_{int(datetime.now().timestamp())}"
+            
+            return jsonify({
+                "success": True,
+                "message": "Login successful (Fallback)",
+                "user": {
+                    "id": "demo_teacher_id",
+                    "email": email,
+                    "name": "Demo Teacher (Fallback)",
+                    "role": "teacher"
+                },
+                "teacher": {
+                    "id": "demo_teacher_id",
+                    "email": email,
+                    "name": "Demo Teacher (Fallback)",
+                    "role": "teacher"
+                },
+                "token": token
+            }), 200
 
     except Exception as e:
         logger.error(traceback.format_exc())
