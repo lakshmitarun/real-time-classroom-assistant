@@ -1,84 +1,56 @@
 from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS
 from datetime import datetime
 import logging
 import traceback
+import os
 
 # =============================
 # APP + LOGGING
 # =============================
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # =============================
-# CORS CONFIG (ONE PLACE ONLY)
+# CORS CONFIG - Using Flask-CORS
 # =============================
-ALLOWED_ORIGINS = [
-    "http://localhost:3001",   # frontend local
-    "http://127.0.0.1:3001",
+# Get frontend URL from environment variable or use defaults
+FRONTEND_URL = os.getenv(
+    "FRONTEND_URL",
     "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app"
-]
+)
 
-def is_allowed_origin(origin):
-    """Check if origin is allowed for CORS"""
-    if not origin:
-        return False
-    
-    # Exact match
-    if origin in ALLOWED_ORIGINS:
-        logger.info(f"✅ Origin allowed (exact match): {origin}")
-        return True
-    
-    # Wildcard for all vercel.app domains
-    if "vercel.app" in origin:
-        logger.info(f"✅ Origin allowed (vercel.app wildcard): {origin}")
-        return True
-    
-    logger.warning(f"❌ Origin NOT allowed: {origin}")
-    return False
+# CORS Configuration
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "http://localhost:3001",
+                "http://127.0.0.1:3001",
+                FRONTEND_URL,
+                "*.vercel.app"  # Allow all vercel.app subdomains
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": False,
+            "max_age": 86400
+        }
+    },
+    origins=[
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        FRONTEND_URL,
+        "*.vercel.app"
+    ],
+    supports_credentials=False
+)
 
-@app.before_request
-def handle_preflight():
-    """Handle CORS preflight requests (OPTIONS)"""
-    origin = request.headers.get("Origin")
-    
-    logger.info(f"📍 Request: {request.method} {request.path} | Origin: {origin}")
-    
-    # Handle OPTIONS preflight
-    if request.method == "OPTIONS":
-        logger.info(f"🔍 Preflight request for: {request.path}")
-        
-        if not is_allowed_origin(origin):
-            logger.error(f"❌ Preflight rejected: Origin not allowed")
-            return "", 403
-        
-        response = make_response("", 204)
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
-        response.headers["Access-Control-Max-Age"] = "86400"  # 24 hours
-        response.headers["Vary"] = "Origin"
-        
-        logger.info(f"✅ Preflight approved with CORS headers")
-        return response, 204
-
-@app.after_request
-def add_cors_headers(response):
-    """Add CORS headers to all responses"""
-    origin = request.headers.get("Origin")
-    
-    # Add CORS headers if origin is allowed
-    if origin and is_allowed_origin(origin):
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Expose-Headers"] = "Content-Type, Authorization"
-        response.headers["Vary"] = "Origin"
-    
-    # Ensure JSON responses have correct content type
-    if request.path.startswith("/api/"):
-        response.headers["Content-Type"] = "application/json"
-    
-    return response
+logger.info("🔧 CORS Configuration:")
+logger.info(f"  Frontend URL: {FRONTEND_URL}")
+logger.info(f"  Allowed Origins: http://localhost:3001, {FRONTEND_URL}, *.vercel.app")
 
 # =============================
 # ROUTES
@@ -101,14 +73,9 @@ def health():
 # =============================
 # STUDENT LOGIN
 # =============================
-@app.route("/api/student/login", methods=["POST", "OPTIONS"])
+@app.route("/api/student/login", methods=["POST"])
 def student_login():
-    """Student login endpoint with CORS support"""
-    
-    # Preflight is handled by @app.before_request
-    if request.method == "OPTIONS":
-        return "", 204
-    
+    """Student login endpoint - CORS handled by Flask-CORS"""
     try:
         data = request.json or {}
 
@@ -124,6 +91,8 @@ def student_login():
         # ✅ DEMO LOGIN (replace with DB later)
         token = f"demo_{user_id}_{int(datetime.now().timestamp())}"
 
+        logger.info(f"✅ Student login successful: {user_id}")
+        
         return jsonify({
             "success": True,
             "message": "Login successful",
