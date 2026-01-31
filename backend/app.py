@@ -212,6 +212,181 @@ def logout():
         }), 500
 
 # =============================
+# TEACHER ENDPOINTS
+# =============================
+@app.route("/api/teacher/start-class", methods=["POST"])
+def start_class():
+    """Start a class session"""
+    try:
+        data = request.json or {}
+        teacher_id = data.get("teacherId")
+        
+        if not teacher_id:
+            return jsonify({
+                "success": False,
+                "message": "Teacher ID required"
+            }), 400
+        
+        # Generate a join code for students
+        join_code = f"{teacher_id[:4]}{int(datetime.now().timestamp()) % 10000}".upper()
+        
+        logger.info(f"🎓 Class started by teacher {teacher_id}, join code: {join_code}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Class started",
+            "joinCode": join_code,
+            "classStartedAt": datetime.utcnow().isoformat()
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to start class",
+            "error": str(e)
+        }), 500
+
+@app.route("/api/teacher/end-class", methods=["POST"])
+def end_class():
+    """End a class session"""
+    try:
+        data = request.json or {}
+        teacher_id = data.get("teacherId")
+        
+        if not teacher_id:
+            return jsonify({
+                "success": False,
+                "message": "Teacher ID required"
+            }), 400
+        
+        logger.info(f"🛑 Class ended by teacher {teacher_id}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Class ended"
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to end class"
+        }), 500
+
+@app.route("/api/teacher/broadcast", methods=["POST"])
+def broadcast_content():
+    """Broadcast content to students"""
+    try:
+        data = request.json or {}
+        teacher_id = data.get("teacherId")
+        english_text = data.get("englishText", "")
+        join_code = data.get("joinCode")
+        
+        if not teacher_id or not join_code:
+            return jsonify({
+                "success": False,
+                "message": "Teacher ID and join code required"
+            }), 400
+        
+        logger.info(f"📡 Teacher {teacher_id} broadcasting: {english_text[:50]}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Content broadcast",
+            "timestamp": datetime.utcnow().isoformat()
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to broadcast"
+        }), 500
+
+@app.route("/api/student/join", methods=["POST"])
+def student_join():
+    """Student join a class"""
+    try:
+        data = request.json or {}
+        student_id = data.get("studentId")
+        join_code = data.get("joinCode")
+        
+        if not student_id or not join_code:
+            return jsonify({
+                "success": False,
+                "message": "Student ID and join code required"
+            }), 400
+        
+        logger.info(f"👤 Student {student_id} joined with code {join_code}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Joined successfully",
+            "joinCode": join_code
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to join class"
+        }), 500
+
+@app.route("/api/student/get-content", methods=["GET"])
+def get_content():
+    """Get current class content"""
+    try:
+        join_code = request.args.get("joinCode")
+        
+        if not join_code:
+            return jsonify({
+                "success": False,
+                "message": "Join code required"
+            }), 400
+        
+        return jsonify({
+            "success": True,
+            "content": {
+                "englishText": "",
+                "bodoTranslation": "",
+                "mizoTranslation": "",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to get content"
+        }), 500
+
+@app.route("/api/student/check-class-active", methods=["GET"])
+def check_class_active():
+    """Check if class is still active"""
+    try:
+        join_code = request.args.get("joinCode")
+        
+        if not join_code:
+            return jsonify({
+                "success": False,
+                "isActive": False
+            }), 400
+        
+        return jsonify({
+            "success": True,
+            "isActive": True
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "isActive": False
+        }), 500
+
+# =============================
 # ERRORS
 # =============================
 @app.errorhandler(404)
