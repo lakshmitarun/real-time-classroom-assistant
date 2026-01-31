@@ -249,8 +249,21 @@ class AuthServiceMongoDB:
             if not student:
                 return {'success': False, 'message': 'Invalid user ID or password'}, 401
             
-            # Verify password
-            if not self.verify_password(password, student.get('password_hash', '')):
+            # Verify password - support both hashed and plain text
+            stored_password_hash = student.get('password_hash', '')
+            stored_password_plain = student.get('password', '')
+            
+            password_valid = False
+            
+            # Try hashed password first
+            if stored_password_hash:
+                password_valid = self.verify_password(password, stored_password_hash)
+            
+            # Fall back to plain text comparison if no hash
+            if not password_valid and stored_password_plain:
+                password_valid = (password.strip() == stored_password_plain.strip())
+            
+            if not password_valid:
                 return {'success': False, 'message': 'Invalid user ID or password'}, 401
             
             # Update last login
@@ -265,12 +278,10 @@ class AuthServiceMongoDB:
             return ({
                 'success': True,
                 'message': 'Login successful',
-                'user': {
-                    'userId': student['user_id'],
-                    'name': student.get('name', ''),
-                    'role': 'student',
-                    'preferredLanguage': student.get('preferred_language', '')
-                },
+                'userId': student['user_id'],
+                'name': student.get('name', student['user_id']),
+                'role': 'student',
+                'preferredLanguage': student.get('preferred_language', ''),
                 'token': token
             }, 200)
         except Exception as e:

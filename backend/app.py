@@ -193,6 +193,25 @@ def teacher_login():
         }), 500
 
 # =============================
+# LOGOUT
+# =============================
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    """Logout endpoint - just returns success"""
+    try:
+        logger.info("👋 User logged out")
+        return jsonify({
+            "success": True,
+            "message": "Logged out successfully"
+        }), 200
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Logout failed"
+        }), 500
+
+# =============================
 # ERRORS
 # =============================
 @app.errorhandler(404)
