@@ -25,15 +25,16 @@ export const apiClient = {
     
     console.log(`📤 [${options.method || 'GET'}] ${url}`);
     
+    // Build config without spreading options.headers twice
     const config = {
       method: options.method || 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      // ✅ CRITICAL for Vercel CORS with auth tokens
       credentials: 'include',
-      ...options,
+    };
+
+    // Carefully merge headers - don't let options.headers override defaults
+    config.headers = {
+      'Content-Type': 'application/json',
+      ...options.headers,
     };
 
     // Add authorization token if exists
@@ -42,6 +43,10 @@ export const apiClient = {
       config.headers['Authorization'] = `Bearer ${token}`;
       console.log('[API] Authorization token included');
     }
+
+    // Spread other options (body, etc) but preserve headers
+    const { headers: _, ...otherOptions } = options;
+    Object.assign(config, otherOptions);
 
     try {
       const response = await fetch(url, config);
