@@ -38,14 +38,24 @@ const TeacherDashboard = () => {
   const startClass = async () => {
     try {
       const token = localStorage.getItem('token');
+      const teacherData = localStorage.getItem('teacher');
+      const teacher = teacherData ? JSON.parse(teacherData) : null;
+      const teacherId = teacher?.id;
+      
       console.log('🎓 Starting class...');
       console.log('Token available:', !!token);
+      console.log('Teacher ID:', teacherId);
+      
+      if (!teacherId) {
+        alert('Teacher ID not found. Please login again.');
+        return;
+      }
       
       // ✅ Use safeFetch with proper error handling
       const result = await safeFetch('/api/teacher/start-class', {
         method: 'POST',
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-        body: JSON.stringify({ subject: 'General' })
+        body: JSON.stringify({ teacherId })
       });
       
       if (!result.ok) {
