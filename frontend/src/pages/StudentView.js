@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, Eye, EyeOff, ArrowRight, Volume2, VolumeX, AlertCircle, Megaphone, Phone } from 'lucide-react';
+import { Home, LogOut, Eye, EyeOff, ArrowRight, Volume2, VolumeX, Megaphone, Phone } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import './StudentView.css';
 
 const StudentView = () => {
   const navigate = useNavigate();
-  const speechSynthesisRef = useRef(null);
   const lastSpokenTextRef = useRef('');
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,7 +29,6 @@ const StudentView = () => {
   const [currentJoinCode, setCurrentJoinCode] = useState('');
   const [classEnded, setClassEnded] = useState(false); // ← NEW: Track if class ended
   const [classEndedMessage, setClassEndedMessage] = useState(''); // ← NEW: Store class ended message
-  const noBroadcastCountRef = useRef(0); // ← NEW: Count consecutive no-broadcast responses
   const [lastContentTimestamp, setLastContentTimestamp] = useState('');
   const noContentCountRef = useRef(0); // ← NEW: Track consecutive 404s
 
