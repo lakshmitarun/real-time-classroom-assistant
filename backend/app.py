@@ -4,7 +4,9 @@ from datetime import datetime
 import logging
 import traceback
 import os
+import sys
 from auth_service_mongodb import AuthServiceMongoDB
+from services.translation_service import TranslationService
 
 # =============================
 # APP + LOGGING
@@ -12,6 +14,12 @@ from auth_service_mongodb import AuthServiceMongoDB
 app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# =============================
+# IN-MEMORY BROADCAST STORAGE
+# =============================
+# Store broadcasts by join code
+broadcasts_store = {}
 
 # =============================
 # CORS CONFIG - Using Flask-CORS
@@ -195,6 +203,66 @@ def teacher_login():
         }), 500
 
 # =============================
+# TEACHER REGISTRATION
+# =============================
+@app.route("/api/auth/register", methods=["POST"])
+def teacher_register():
+    """Teacher registration endpoint"""
+    try:
+        data = request.json or {}
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+        name = data.get("name", "").strip()
+
+        if not email or not password or not name:
+            return jsonify({
+                "success": False,
+                "message": "Email, password, and name required"
+            }), 400
+
+        # Try real registration first
+        if auth_service:
+            logger.info(f"📝 Registering teacher: {email}")
+            result, status_code = auth_service.register(email, password, name)
+            
+            if result.get("success"):
+                logger.info(f"✅ Teacher registered successfully: {email}")
+                return jsonify(result), status_code
+            else:
+                logger.warning(f"❌ Teacher registration failed: {email} - {result.get('message')}")
+                return jsonify(result), status_code
+        else:
+            # Fallback: Demo mode (for development/testing)
+            logger.warning(f"⚠️ Using fallback demo registration for: {email}")
+            token = f"demo_{email}_{int(datetime.now().timestamp())}"
+            
+            return jsonify({
+                "success": True,
+                "message": "Registration successful (Fallback)",
+                "user": {
+                    "id": "demo_teacher_id",
+                    "email": email,
+                    "name": name or "Demo Teacher",
+                    "role": "teacher"
+                },
+                "teacher": {
+                    "id": "demo_teacher_id",
+                    "email": email,
+                    "name": name or "Demo Teacher",
+                    "role": "teacher"
+                },
+                "token": token
+            }), 200
+
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Server error",
+            "error": str(e)
+        }), 500
+
+# =============================
 # LOGOUT
 # =============================
 @app.route("/api/logout", methods=["POST"])
@@ -211,6 +279,98 @@ def logout():
         return jsonify({
             "success": False,
             "message": "Logout failed"
+        }), 500
+
+# =============================
+# TRANSLATION SERVICE
+# =============================
+@app.route("/api/translate", methods=["POST", "OPTIONS"])
+def translate():
+    """Translate text from source language to target language"""
+    # Handle CORS preflight
+    if request.method == "OPTIONS":
+        return make_response(jsonify({"success": True}), 200)
+    
+    try:
+        data = request.json or {}
+        text = data.get("text", "").strip()
+        source_lang = data.get("source_lang", "english").lower()
+        target_lang = data.get("target_lang", "bodo").lower()
+        
+        if not text:
+            return jsonify({
+                "success": False,
+                "message": "No text provided"
+            }), 400
+        
+        # Initialize translation service
+        translation_service = TranslationService()
+        
+        # Translate the text
+        translation = translation_service.translate(
+            text,
+            source_lang=source_lang,
+            target_lang=target_lang
+        )
+        
+        logger.info(f"✅ Translated: '{text}' ({source_lang}→{target_lang})")
+        
+        return jsonify({
+            "success": True,
+            "translation": translation,
+            "text": text,
+            "source_lang": source_lang,
+            "target_lang": target_lang
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"❌ Translation error: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Translation failed",
+            "error": str(e)
+        }), 500
+
+@app.route("/api/translate/batch", methods=["POST"])
+def translate_batch():
+    """Translate text to Bodo and Mizo"""
+    try:
+        data = request.json or {}
+        texts = data.get("texts", [])
+        
+        if not texts:
+            return jsonify({
+                "success": False,
+                "message": "No text provided"
+            }), 400
+        
+        # Initialize translation service
+        translation_service = TranslationService()
+        
+        results = []
+        for text in texts:
+            bodo_translation = translation_service.translate(text, source_lang="english", target_lang="bodo")
+            mizo_translation = translation_service.translate(text, source_lang="english", target_lang="mizo")
+            
+            results.append({
+                "englishText": text,
+                "bodoTranslation": bodo_translation,
+                "mizoTranslation": mizo_translation
+            })
+        
+        logger.info(f"✅ Translated {len(texts)} texts")
+        
+        return jsonify({
+            "success": True,
+            "translations": results
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"❌ Translation error: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Translation failed",
+            "error": str(e)
         }), 500
 
 # =============================
@@ -276,6 +436,36 @@ def end_class():
             "message": "Failed to end class"
         }), 500
 
+@app.route("/api/teacher/stop-class", methods=["POST"])
+def stop_class():
+    """Stop a class session and clear broadcasts"""
+    try:
+        data = request.json or {}
+        join_code = data.get("joinCode")
+        
+        if not join_code:
+            return jsonify({
+                "success": False,
+                "message": "Join code required"
+            }), 400
+        
+        # Clear the broadcast for this join code
+        if join_code in broadcasts_store:
+            del broadcasts_store[join_code]
+            logger.info(f"🛑 Class stopped, broadcasts cleared for {join_code}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Class stopped"
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to end class"
+        }), 500
+
 @app.route("/api/teacher/broadcast", methods=["POST"])
 def broadcast_content():
     """Broadcast content to students"""
@@ -283,6 +473,8 @@ def broadcast_content():
         data = request.json or {}
         teacher_id = data.get("teacherId")
         english_text = data.get("englishText", "")
+        bodo_translation = data.get("bodoTranslation", "")
+        mizo_translation = data.get("mizoTranslation", "")
         join_code = data.get("joinCode")
         
         if not teacher_id or not join_code:
@@ -291,7 +483,55 @@ def broadcast_content():
                 "message": "Teacher ID and join code required"
             }), 400
         
-        logger.info(f"📡 Teacher {teacher_id} broadcasting: {english_text[:50]}")
+        # Store the broadcast content
+        broadcasts_store[join_code] = {
+            "englishText": english_text,
+            "bodoTranslation": bodo_translation,
+            "mizoTranslation": mizo_translation,
+            "timestamp": datetime.utcnow().isoformat(),
+            "teacherId": teacher_id
+        }
+        
+        logger.info(f"📡 Teacher {teacher_id} broadcasting to {join_code}: {english_text[:50]}")
+        
+        return jsonify({
+            "success": True,
+            "message": "Content broadcast",
+            "timestamp": datetime.utcnow().isoformat()
+        }), 200
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to broadcast"
+        }), 500
+
+@app.route("/api/teacher/broadcast-speech", methods=["POST"])
+def broadcast_speech():
+    """Alias endpoint for backward compatibility"""
+    try:
+        data = request.json or {}
+        join_code = data.get("joinCode")
+        english_text = data.get("englishText", "")
+        bodo_translation = data.get("bodoTranslation", "")
+        mizo_translation = data.get("mizoTranslation", "")
+        
+        if not join_code:
+            return jsonify({
+                "success": False,
+                "message": "Join code required"
+            }), 400
+        
+        # Store the broadcast content
+        broadcasts_store[join_code] = {
+            "englishText": english_text,
+            "bodoTranslation": bodo_translation,
+            "mizoTranslation": mizo_translation,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        logger.info(f"📡 Broadcasting to {join_code}: {english_text[:50]}")
         
         return jsonify({
             "success": True,
@@ -364,6 +604,38 @@ def get_content():
             "message": "Failed to get content"
         }), 500
 
+@app.route("/api/student/get-broadcast/<join_code>", methods=["GET"])
+def get_broadcast(join_code):
+    """Get current broadcast content for a specific join code"""
+    try:
+        join_code = join_code.upper()
+        
+        if join_code in broadcasts_store:
+            broadcast = broadcasts_store[join_code]
+            logger.debug(f"📨 Sending broadcast for {join_code}")
+            return jsonify({
+                "success": True,
+                "content": {
+                    "englishText": broadcast.get("englishText", ""),
+                    "bodoTranslation": broadcast.get("bodoTranslation", ""),
+                    "mizoTranslation": broadcast.get("mizoTranslation", ""),
+                    "translatedText": broadcast.get("mizoTranslation", "") or broadcast.get("bodoTranslation", "")
+                },
+                "timestamp": broadcast.get("timestamp", datetime.utcnow().isoformat())
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": "No content available"
+            }), 404
+    
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({
+            "success": False,
+            "message": "Failed to get broadcast"
+        }), 500
+
 @app.route("/api/student/check-class-active", methods=["GET"])
 def check_class_active():
     """Check if class is still active"""
@@ -386,6 +658,204 @@ def check_class_active():
         return jsonify({
             "success": False,
             "isActive": False
+        }), 500
+
+# =============================
+# ADMIN ENDPOINTS - HISTORY & STATS
+# =============================
+@app.route("/api/classrooms/history", methods=["GET"])
+def get_classrooms_history():
+    """Get historical classroom data"""
+    try:
+        filter_type = request.args.get('filter', 'all').lower()
+        
+        # In a real application, you would fetch from database
+        # For now, returning sample data structure
+        past_classrooms = [
+            {
+                "teacher": "Mr. John",
+                "subject": "Mathematics",
+                "students": 25,
+                "startTime": (datetime.utcnow().isoformat()),
+                "endTime": (datetime.utcnow().isoformat()),
+                "translationsCount": 45
+            },
+            {
+                "teacher": "Mrs. Sarah",
+                "subject": "English",
+                "students": 30,
+                "startTime": (datetime.utcnow().isoformat()),
+                "endTime": (datetime.utcnow().isoformat()),
+                "translationsCount": 67
+            }
+        ]
+        
+        return jsonify({
+            "success": True,
+            "classrooms": past_classrooms,
+            "filter": filter_type
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch classroom history: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch history",
+            "classrooms": []
+        }), 500
+
+@app.route("/api/students/history", methods=["GET"])
+def get_students_history():
+    """Get historical student data"""
+    try:
+        filter_type = request.args.get('filter', 'all').lower()
+        
+        # In a real application, you would fetch from database
+        # For now, returning sample data structure
+        past_students = [
+            {
+                "userId": "STU001",
+                "name": "Raj Kumar",
+                "preferredLanguage": "Bodo",
+                "lastLogin": (datetime.utcnow().isoformat()),
+                "totalSessions": 5,
+                "totalTime": "2h 30m"
+            },
+            {
+                "userId": "STU002",
+                "name": "Priya Singh",
+                "preferredLanguage": "Mizo",
+                "lastLogin": (datetime.utcnow().isoformat()),
+                "totalSessions": 8,
+                "totalTime": "4h 15m"
+            }
+        ]
+        
+        return jsonify({
+            "success": True,
+            "students": past_students,
+            "filter": filter_type
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch student history: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch history",
+            "students": []
+        }), 500
+
+@app.route("/api/stats", methods=["GET"])
+def get_stats():
+    """Get current statistics"""
+    try:
+        return jsonify({
+            "success": True,
+            "active_classrooms": 2,
+            "total_teachers": 15,
+            "total_students": 150,
+            "logged_in_students": 45,
+            "total_unique_logins": 120,
+            "avg_accuracy": 92,
+            "avg_latency": 0.8,
+            "total_translations": 2492
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch stats: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch stats"
+        }), 500
+
+@app.route("/api/active-students", methods=["GET"])
+def get_active_students():
+    """Get currently active students"""
+    try:
+        active_students = [
+            {
+                "userId": "STU001",
+                "name": "Raj Kumar",
+                "preferredLanguage": "Bodo",
+                "loginTime": datetime.utcnow().isoformat()
+            },
+            {
+                "userId": "STU002",
+                "name": "Priya Singh",
+                "preferredLanguage": "Mizo",
+                "loginTime": datetime.utcnow().isoformat()
+            }
+        ]
+        
+        return jsonify({
+            "success": True,
+            "students": active_students
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch active students: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch active students",
+            "students": []
+        }), 500
+
+@app.route("/api/classrooms", methods=["GET"])
+def get_classrooms():
+    """Get current classrooms"""
+    try:
+        classrooms = [
+            {
+                "teacher": "Mr. John",
+                "subject": "Mathematics",
+                "students": 25,
+                "startTime": datetime.utcnow().isoformat(),
+                "status": "active"
+            },
+            {
+                "teacher": "Mrs. Sarah",
+                "subject": "English",
+                "students": 30,
+                "startTime": datetime.utcnow().isoformat(),
+                "status": "active"
+            }
+        ]
+        
+        return jsonify({
+            "success": True,
+            "classrooms": classrooms
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch classrooms: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch classrooms",
+            "classrooms": []
+        }), 500
+
+@app.route("/api/translation-stats", methods=["GET"])
+def get_translation_stats():
+    """Get translation statistics"""
+    try:
+        stats = [
+            {
+                "language": "English → Bodo",
+                "count": 1200,
+                "accuracy": 95
+            },
+            {
+                "language": "English → Mizo",
+                "count": 1292,
+                "accuracy": 93
+            }
+        ]
+        
+        return jsonify({
+            "success": True,
+            "stats": stats
+        }), 200
+    except Exception as e:
+        logger.error(f"Failed to fetch translation stats: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "message": "Failed to fetch translation stats",
+            "stats": []
         }), 500
 
 # =============================

@@ -24,20 +24,26 @@ const AdminDashboard = () => {
   const [activeStudents, setActiveStudents] = useState([]);
   const [classrooms, setClassrooms] = useState([]);
   const [translationStats, setTranslationStats] = useState([]);
+  const [pastClassrooms, setPastClassrooms] = useState([]);
+  const [pastStudents, setPastStudents] = useState([]);
+  const [historyFilter, setHistoryFilter] = useState('all'); // 'all', 'today', 'week'
 
   // Fetch stats and active students on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, studentsRes, classroomsRes, translationStatsRes] = await Promise.all([
+        const [statsRes, studentsRes, classroomsRes, translationStatsRes, pastClassroomsRes, pastStudentsRes] = await Promise.all([
           axios.get(`${API_BASE_URL}/api/stats`),
           axios.get(`${API_BASE_URL}/api/active-students`),
           axios.get(`${API_BASE_URL}/api/classrooms`),
-          axios.get(`${API_BASE_URL}/api/translation-stats`)
+          axios.get(`${API_BASE_URL}/api/translation-stats`),
+          axios.get(`${API_BASE_URL}/api/classrooms/history?filter=${historyFilter}`).catch(() => ({ data: { classrooms: [] } })),
+          axios.get(`${API_BASE_URL}/api/students/history?filter=${historyFilter}`).catch(() => ({ data: { students: [] } }))
         ]);
         
         console.log('📊 API Response - Classrooms:', classroomsRes.data);
         console.log('📊 API Response - Stats:', statsRes.data);
+        console.log('📊 API Response - Past Classrooms:', pastClassroomsRes.data);
         
         setStats({
           activeClassrooms: statsRes.data.active_classrooms,
@@ -52,6 +58,8 @@ const AdminDashboard = () => {
         
         setActiveStudents(studentsRes.data.students);
         setClassrooms(classroomsRes.data.classrooms || []);
+        setPastClassrooms(pastClassroomsRes.data.classrooms || []);
+        setPastStudents(pastStudentsRes.data.students || []);
         console.log('✅ Classrooms state updated:', classroomsRes.data.classrooms || []);
         
         if (translationStatsRes && translationStatsRes.data && translationStatsRes.data.stats) {
@@ -66,7 +74,7 @@ const AdminDashboard = () => {
     const interval = setInterval(fetchData, 5000); // Refresh every 5 seconds
     
     return () => clearInterval(interval);
-  }, []);
+  }, [historyFilter]);
 
   const handleUploadDataset = () => {
     alert('Upload dataset functionality coming soon!');
@@ -116,6 +124,13 @@ const AdminDashboard = () => {
           >
             <Users size={18} />
             Classrooms
+          </button>
+          <button
+            className={`tab ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            <Clock size={18} />
+            History
           </button>
           <button
             className={`tab ${activeTab === 'dataset' ? 'active' : ''}`}
@@ -315,6 +330,158 @@ const AdminDashboard = () => {
               <div className="teacher-list">
                 <div className="empty-state">
                   <p>Teacher performance data is not available.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div className="tab-content fade-in">
+            <div className="history-filters card">
+              <h2>
+                <Clock size={24} />
+                Classroom History
+              </h2>
+              <div className="filter-buttons">
+                <button
+                  className={`filter-btn ${historyFilter === 'all' ? 'active' : ''}`}
+                  onClick={() => setHistoryFilter('all')}
+                >
+                  All Time
+                </button>
+                <button
+                  className={`filter-btn ${historyFilter === 'today' ? 'active' : ''}`}
+                  onClick={() => setHistoryFilter('today')}
+                >
+                  Today
+                </button>
+                <button
+                  className={`filter-btn ${historyFilter === 'week' ? 'active' : ''}`}
+                  onClick={() => setHistoryFilter('week')}
+                >
+                  This Week
+                </button>
+              </div>
+            </div>
+
+            <div className="past-classrooms card">
+              <h2>Past Classrooms</h2>
+              <div className="classrooms-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Teacher</th>
+                      <th>Subject</th>
+                      <th>Students</th>
+                      <th>Start Time</th>
+                      <th>End Time</th>
+                      <th>Duration</th>
+                      <th>Translations</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastClassrooms.length > 0 ? (
+                      pastClassrooms.map((classroom, index) => {
+                        const startTime = new Date(classroom.startTime);
+                        const endTime = new Date(classroom.endTime);
+                        const duration = Math.floor((endTime - startTime) / 1000 / 60); // minutes
+                        
+                        return (
+                          <tr key={index}>
+                            <td><strong>{classroom.teacher}</strong></td>
+                            <td>{classroom.subject}</td>
+                            <td>{classroom.students}</td>
+                            <td>{startTime.toLocaleTimeString()}</td>
+                            <td>{endTime.toLocaleTimeString()}</td>
+                            <td>{duration} min</td>
+                            <td>{classroom.translationsCount || 0}</td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={7} style={{ textAlign: 'center', color: '#666' }}>
+                          No past classroom data available.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="past-students card">
+              <h2>Past Active Students</h2>
+              <div className="stats-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Student ID</th>
+                      <th>Name</th>
+                      <th>Preferred Language</th>
+                      <th>Last Login</th>
+                      <th>Total Sessions</th>
+                      <th>Total Time</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pastStudents.length > 0 ? (
+                      pastStudents.map((student, index) => (
+                        <tr key={index}>
+                          <td><strong>{student.userId}</strong></td>
+                          <td>{student.name}</td>
+                          <td>
+                            <span className="language-badge">
+                              {student.preferredLanguage || 'Not set'}
+                            </span>
+                          </td>
+                          <td>{new Date(student.lastLogin).toLocaleString()}</td>
+                          <td>{student.totalSessions || 1}</td>
+                          <td>{student.totalTime || '—'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', color: '#666' }}>
+                          No past student data available.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="history-stats card">
+              <h2>Historical Statistics</h2>
+              <div className="stats-grid">
+                <div className="stat-box">
+                  <h3>{pastClassrooms.length}</h3>
+                  <p>Total Classes Conducted</p>
+                </div>
+                <div className="stat-box">
+                  <h3>
+                    {pastClassrooms.reduce((sum, c) => sum + parseInt(c.students || 0), 0)}
+                  </h3>
+                  <p>Total Student Attendances</p>
+                </div>
+                <div className="stat-box">
+                  <h3>
+                    {Math.round(
+                      pastClassrooms.reduce((sum, c) => {
+                        const start = new Date(c.startTime);
+                        const end = new Date(c.endTime);
+                        return sum + (end - start) / 1000 / 60;
+                      }, 0) / pastClassrooms.length
+                    ) || 0} min
+                  </h3>
+                  <p>Avg Class Duration</p>
+                </div>
+                <div className="stat-box">
+                  <h3>{pastStudents.length}</h3>
+                  <p>Unique Students</p>
                 </div>
               </div>
             </div>

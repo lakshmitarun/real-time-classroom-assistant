@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, Download, Home, Play, Square } from 'lucide-react';
+import { Mic, MicOff, Download, Home, Play, Square, LogOut } from 'lucide-react';
 import { safeFetch } from '../utils/apiClient';
 import './TeacherDashboard.css';
 
@@ -15,12 +15,28 @@ const TeacherDashboard = () => {
   const [recognitionInterval, setRecognitionInterval] = useState(null);
   const [joinCode, setJoinCode] = useState('');
   const [joinMessage, setJoinMessage] = useState('');
+  const [teacherInfo, setTeacherInfo] = useState({ name: '', email: '' });
 
   // Auth check: redirect to login if no token
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/login');
+      return;
+    }
+    
+    // Retrieve teacher info from localStorage
+    const teacherData = localStorage.getItem('teacher');
+    if (teacherData) {
+      try {
+        const teacher = JSON.parse(teacherData);
+        setTeacherInfo({
+          name: teacher.name || '',
+          email: teacher.email || ''
+        });
+      } catch (e) {
+        console.error('Failed to parse teacher data:', e);
+      }
     }
   }, [navigate]);
 
@@ -165,8 +181,7 @@ const TeacherDashboard = () => {
       const result = await safeFetch('/api/translate/batch', {
         method: 'POST',
         body: JSON.stringify({
-          text: text.trim(),
-          source_lang: 'english'
+          texts: [text.trim()]
         })
       });
       
@@ -187,17 +202,14 @@ const TeacherDashboard = () => {
       let bodo = '';
       let mizo = '';
       
-      if (data.translations && data.translations.bodo) {
-        bodo = data.translations.bodo;
+      if (data.translations && data.translations.length > 0) {
+        const firstTranslation = data.translations[0];
+        bodo = firstTranslation.bodoTranslation || '— (not found in dataset)';
+        mizo = firstTranslation.mizoTranslation || '— (not found in dataset)';
         setBodoTranslation(bodo);
-      } else {
-        setBodoTranslation('— (not found in dataset)');
-      }
-      
-      if (data.translations && data.translations.mizo) {
-        mizo = data.translations.mizo;
         setMizoTranslation(mizo);
       } else {
+        setBodoTranslation('— (not found in dataset)');
         setMizoTranslation('— (not found in dataset)');
       }
       
@@ -229,17 +241,35 @@ Mizo Translation: ${mizoTranslation}
     a.click();
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('teacher');
+    localStorage.removeItem('userRole');
+    navigate('/');
+  };
+
   return (
     <div className="teacher-dashboard">
       {/* Header */}
       <header className="dashboard-header">
         <div className="container">
           <div className="header-content">
-            <h1>Teacher Dashboard</h1>
-            <button className="btn btn-secondary" onClick={() => navigate('/')}>
-              <Home size={20} />
-              Home
-            </button>
+            <div>
+              <h1>Teacher Dashboard</h1>
+              {teacherInfo.email && (
+                <p className="teacher-email">Logged in as: {teacherInfo.email}</p>
+              )}
+            </div>
+            <div className="header-buttons">
+              <button className="btn btn-secondary" onClick={() => navigate('/')}>
+                <Home size={20} />
+                Home
+              </button>
+              <button className="btn btn-danger" onClick={handleLogout}>
+                <LogOut size={20} />
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>

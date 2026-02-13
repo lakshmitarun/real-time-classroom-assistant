@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Home, LogOut, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Home, LogOut, Eye, EyeOff, ArrowRight, Volume2, VolumeX, AlertCircle, Megaphone, Phone } from 'lucide-react';
 import axios from 'axios';
 import API_BASE_URL from '../config/api';
 import './StudentView.css';
 
 const StudentView = () => {
   const navigate = useNavigate();
+  const speechSynthesisRef = useRef(null);
+  const lastSpokenTextRef = useRef('');
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loginForm, setLoginForm] = useState({ userId: '', password: '' });
@@ -14,17 +16,23 @@ const StudentView = () => {
   const [loginError, setLoginError] = useState('');
   const [studentData, setStudentData] = useState(null);
 
-  const [selectedLanguage, setSelectedLanguage] = useState('bodo'); // eslint-disable-line no-unused-vars
-  const [englishSubtitle, setEnglishSubtitle] = useState(''); // eslint-disable-line no-unused-vars
-  const [translatedSubtitle, setTranslatedSubtitle] = useState(''); // eslint-disable-line no-unused-vars
-  const [audioEnabled, setAudioEnabled] = useState(true); // eslint-disable-line no-unused-vars
+  const [selectedLanguage, setSelectedLanguage] = useState('bodo');
+  const [languageSelected, setLanguageSelected] = useState(false); // ← NEW: Track if language was selected
+  const [englishSubtitle, setEnglishSubtitle] = useState('');
+  const [translatedSubtitle, setTranslatedSubtitle] = useState('');
+  const [audioEnabled, setAudioEnabled] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false); // ← NEW: Track speaking status
 
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [joinError, setJoinError] = useState('');
-  const [joinedByCode, setJoinedByCode] = useState(false); // eslint-disable-line no-unused-vars
-  const [currentJoinCode, setCurrentJoinCode] = useState(''); // eslint-disable-line no-unused-vars
-  const [lastContentTimestamp, setLastContentTimestamp] = useState(''); // eslint-disable-line no-unused-vars
+  const [joinedByCode, setJoinedByCode] = useState(false);
+  const [currentJoinCode, setCurrentJoinCode] = useState('');
+  const [classEnded, setClassEnded] = useState(false); // ← NEW: Track if class ended
+  const [classEndedMessage, setClassEndedMessage] = useState(''); // ← NEW: Store class ended message
+  const noBroadcastCountRef = useRef(0); // ← NEW: Count consecutive no-broadcast responses
+  const [lastContentTimestamp, setLastContentTimestamp] = useState('');
+  const noContentCountRef = useRef(0); // ← NEW: Track consecutive 404s
 
   // =========================
   // RESTORE SESSION
@@ -68,7 +76,7 @@ const StudentView = () => {
         }
       );
 
-      console.log('✅ Login Success:', response.data);
+      console.log('Login Success:', response.data);
 
       if (response.data.success) {
         // Extract user data - backend returns: { success, message, userId, name, role, token }
@@ -96,7 +104,7 @@ const StudentView = () => {
         setLoginError('Invalid credentials');
       }
     } catch (error) {
-      console.error('❌ Login Error Details:');
+      console.error('Login Error Details:');
       console.error('  - Message:', error.message);
       console.error('  - Status:', error.response?.status);
       console.error('  - Data:', error.response?.data);
@@ -189,6 +197,109 @@ const StudentView = () => {
   };
 
   // =========================
+  // LISTEN FOR TEACHER BROADCASTS + AUTO SPEECH
+  // =========================
+  useEffect(() => {
+    if (!joinedByCode || !currentJoinCode) return;
+
+    let noContentCounter = 0;
+    const joinTime = Date.now(); // Track when student joined
+    const GRACE_PERIOD = 15000; // First 15 seconds: 404 is normal (no broadcast yet)
+    const DISCONNECT_THRESHOLD = 10; // After grace period: need 10 consecutive 404s to disconnect
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/api/student/get-broadcast/${currentJoinCode}`,
+          {
+            timeout: 5000
+          }
+        );
+
+        // Any successful response = reset disconnect counter
+        noContentCounter = 0;
+
+        if (res.data.success && res.data.content) {
+          const englishText = res.data.content.englishText || '';
+          
+          // Get translation based on SELECTED LANGUAGE ONLY
+          const translation = selectedLanguage === 'mizo' 
+            ? res.data.content.mizoTranslation 
+            : res.data.content.bodoTranslation;
+          
+          setEnglishSubtitle(englishText);
+          setTranslatedSubtitle(translation || '— (not found in dataset)');
+          setLastContentTimestamp(res.data.timestamp);
+          
+          console.log(`[${selectedLanguage.toUpperCase()}] Received:`, translation);
+          
+          // AUTO-SPEAK: Only if text changed and audio enabled
+          if (translation && translation !== lastSpokenTextRef.current && audioEnabled && !isSpeaking) {
+            lastSpokenTextRef.current = translation;
+            setIsSpeaking(true);
+            
+            if ('speechSynthesis' in window) {
+              window.speechSynthesis.cancel(); // Cancel any previous speech
+              
+              const utterance = new SpeechSynthesisUtterance(translation);
+              
+              // Set voice language based on selected language
+              if (selectedLanguage === 'bodo') {
+                utterance.lang = 'hi-IN'; // Hindi for Bodo approximation
+                utterance.rate = 0.9;
+              } else {
+                utterance.lang = 'en-US'; // English for Mizo approximation
+                utterance.rate = 0.85;
+              }
+              
+              utterance.onend = () => setIsSpeaking(false);
+              utterance.onerror = () => setIsSpeaking(false);
+              
+              window.speechSynthesis.speak(utterance);
+            }
+          }
+        }
+      } catch (err) {
+        // Only 404 errors count as potential class-end (broadcast was deleted)
+        if (err.response?.status === 404) {
+          const elapsedTime = Date.now() - joinTime;
+          
+          // During grace period: ignore 404s (class just started, no broadcast yet)
+          if (elapsedTime < GRACE_PERIOD) {
+            console.debug('No broadcast yet (class just started)');
+            noContentCounter = 0; // Reset counter during grace period
+          } else {
+            // After grace period: count consecutive 404s
+            noContentCounter++;
+            
+            // Disconnect only after sustained 404s beyond grace period
+            if (noContentCounter >= DISCONNECT_THRESHOLD) {
+              console.log('Class stopped by teacher - disconnecting');
+              setClassEndedMessage('Teacher has ended the class');
+              setClassEnded(true);
+              setJoinedByCode(false);
+              setIsConnected(false);
+              window.speechSynthesis.cancel(); // Stop any ongoing speech
+              clearInterval(pollInterval);
+            }
+          }
+        } else {
+          // For other errors (network, timeout), don't count toward disconnect
+          if (err.code !== 'ECONNABORTED') {
+            console.debug('Polling error:', err.message);
+          }
+          // Don't increment counter for non-404 errors
+        }
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(pollInterval);
+      noContentCountRef.current = 0;
+    };
+  }, [joinedByCode, currentJoinCode, selectedLanguage, audioEnabled, isSpeaking]);
+
+  // =========================
   // UI
   // =========================
   return (
@@ -269,9 +380,41 @@ const StudentView = () => {
           </div>
 
           <div className="subtitle-container">
-            {isConnected ? (
+            {classEndedMessage && (
+              <div className="class-ended-message">
+                <p>🛑 {classEndedMessage}</p>
+              </div>
+            )}
+            {isConnected && !classEndedMessage ? (
               <div className="subtitle-box">
-                <p>Connected to classroom 🎉</p>
+                {englishSubtitle ? (
+                  <>
+                    <div className="subtitle-english">
+                      <p><strong>English:</strong> {englishSubtitle}</p>
+                    </div>
+                    <div className="translation-column">
+                      <div className="translation-label">
+                        <span className="language-badge" style={{
+                          background: selectedLanguage === 'bodo' ? '#4f46e5' : '#9333ea'
+                        }}>
+                          {selectedLanguage.toUpperCase()}
+                        </span>
+                      </div>
+                      <div className="translation-text">
+                        {translatedSubtitle && translatedSubtitle !== '— (not found in dataset)' ? (
+                          <p>{translatedSubtitle}</p>
+                        ) : (
+                          <p className="placeholder">{translatedSubtitle}</p>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="waiting-message">
+                    <p className="waiting-title">⏳ Waiting for teacher</p>
+                    <p className="waiting-subtitle">Teacher will start sharing content soon...</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="no-subtitles">
@@ -282,20 +425,109 @@ const StudentView = () => {
 
           <div className="join-class-section card">
             <h3>Join Class</h3>
-            <div className="form-group">
-              <input
-                type="text"
-                placeholder="Enter join code"
-                value={joinCodeInput}
-                onChange={(e) => setJoinCodeInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
-              />
-              <button className="btn btn-primary" onClick={handleJoinByCode}>
-                Join
-              </button>
-            </div>
-            {joinError && <div className="error-message">{joinError}</div>}
+            
+            {!languageSelected ? (
+              <>
+                <p style={{ marginBottom: '20px', color: '#666' }}>
+                  Select your preferred translation language:
+                </p>
+                <div className="language-selection">
+                  <button
+                    className={`language-btn ${selectedLanguage === 'bodo' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedLanguage('bodo');
+                      setLanguageSelected(true);
+                    }}
+                  >
+                    Bodo
+                  </button>
+                  <button
+                    className={`language-btn ${selectedLanguage === 'mizo' ? 'active' : ''}`}
+                    onClick={() => {
+                      setSelectedLanguage('mizo');
+                      setLanguageSelected(true);
+                    }}
+                  >
+                    Mizo
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="language-info">
+                  <p><Megaphone size={18} style={{display: 'inline-block', marginRight: '8px', verticalAlign: 'middle'}} /> Language: <strong>{selectedLanguage.toUpperCase()}</strong></p>
+                  <button 
+                    className="btn-text"
+                    onClick={() => setLanguageSelected(false)}
+                    style={{ fontSize: '12px', marginTop: '8px' }}
+                  >
+                    Change Language
+                  </button>
+                </div>
+                
+                <div className="form-group" style={{ marginTop: '15px' }}>
+                  <label>Enter join code:</label>
+                  <input
+                    type="text"
+                    placeholder="e.g., GOOG1234"
+                    value={joinCodeInput}
+                    onChange={(e) => setJoinCodeInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+                  />
+                  <button className="btn btn-primary" onClick={handleJoinByCode}>
+                    Join Class
+                  </button>
+                </div>
+                {joinError && <div className="error-message">{joinError}</div>}
+              </>
+            )}
           </div>
+
+          {isConnected && (
+            <div className="audio-control card">
+              <button 
+                className={`btn btn-audio ${audioEnabled ? 'enabled' : 'disabled'}`}
+                onClick={() => setAudioEnabled(!audioEnabled)}
+              >
+                {audioEnabled ? (
+                  <>
+                    <Volume2 size={20} />
+                    Audio ON
+                  </>
+                ) : (
+                  <>
+                    <VolumeX size={20} />
+                    Audio OFF
+                  </>
+                )}
+              </button>
+              {isSpeaking && <span style={{ marginLeft: '10px', color: '#4CAF50', display: 'flex', alignItems: 'center', gap: '6px' }}><Volume2 size={16} /> Speaking...</span>}
+            </div>
+          )}
+
+          {/* CLASS ENDED MODAL */}
+          {classEnded && (
+            <div className="modal-overlay">
+              <div className="modal-content">
+                <div className="modal-icon"><Phone size={64} style={{color: '#ef4444'}} /></div>
+                <h2 className="modal-title">Teacher has ended the class</h2>
+                <p className="modal-message">The class session has been closed by your teacher. Please wait for the next class or contact your teacher.</p>
+                <button 
+                  className="btn btn-primary"
+                  onClick={() => {
+                    setClassEnded(false);
+                    setClassEndedMessage('');
+                    setLanguageSelected(false);
+                    setJoinCodeInput('');
+                    setEnglishSubtitle('');
+                    setTranslatedSubtitle('');
+                  }}
+                >
+                  Return to Join
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

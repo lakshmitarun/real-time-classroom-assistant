@@ -44,6 +44,7 @@ class TranslationService:
         print("[WARNING] Using fallback translation database")
         return {
             'english': {
+                # Phrases
                 'good morning class': {'bodo': 'सुबुं बिहान', 'mizo': 'Zing tlâm ṭha class'},
                 'please open your books': {'bodo': 'अननानै नायनि किताबखौ खेव', 'mizo': 'I lehkhabu hung hawng rawh'},
                 'do you understand?': {'bodo': 'नों गोजौ खायला?', 'mizo': 'I hrethiam em?'},
@@ -59,15 +60,24 @@ class TranslationService:
                 'pay attention': {'bodo': 'मोनो खालाम', 'mizo': 'Ngaithla ṭha rawh'},
                 'turn to page': {'bodo': 'फेजखौ हुं', 'mizo': 'Phek kaltlang rawh'},
                 'let us begin': {'bodo': 'जिउनां जागाय', 'mizo': 'Kan tan dawn e'},
+                'what are you doing': {'bodo': 'नों तुइ तिङ गोबा', 'mizo': 'I ti tawng law em'},
+                'hi hello what are you doing': {'bodo': 'सुबुं, नों तुइ तिङ गोबा', 'mizo': 'Chibai, i ti tawng law em'},
+                # Single words
                 'mathematics': {'bodo': 'सान्न्रि', 'mizo': 'Mathematics'},
                 'science': {'bodo': 'बिजान', 'mizo': 'Science'},
                 'history': {'bodo': 'बुरुं', 'mizo': 'History'},
                 'geography': {'bodo': 'फिथा बिजान', 'mizo': 'Geography'},
                 'english': {'bodo': 'आंग्रेजी', 'mizo': 'English'},
                 'hello': {'bodo': 'सुबुं', 'mizo': 'Chibai'},
+                'hi': {'bodo': 'सुबुं', 'mizo': 'Chibai'},
                 'thank you': {'bodo': 'मोजां', 'mizo': 'Ka lawm e'},
+                'thanks': {'bodo': 'मोजां', 'mizo': 'Ka lawm e'},
                 'yes': {'bodo': 'अं', 'mizo': 'Awle'},
                 'no': {'bodo': 'नङा', 'mizo': 'Aih'},
+                'you': {'bodo': 'नों', 'mizo': 'I'},
+                'are': {'bodo': 'खायला', 'mizo': 'law'},
+                'doing': {'bodo': 'गोबा', 'mizo': 'tawng'},
+                'what': {'bodo': 'कोन', 'mizo': 'ti'},
                 'please help me': {'bodo': 'अननानै आङा मद्द खालाम', 'mizo': 'Min pui ve rawh'},
                 'i dont understand': {'bodo': 'आं गोजाखै', 'mizo': 'Ka hrethiam lo'},
                 'repeat please': {'bodo': 'अननानै बार हुनाय', 'mizo': 'Nawn lehah sawi leh rawh'},

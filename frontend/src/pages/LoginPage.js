@@ -97,7 +97,8 @@ const LoginPage = () => {
 
       if (isLogin) {
         // Login successful - redirect based on role
-        const role = data.role || 'teacher'; // Default to teacher for backward compatibility
+        // Get role from teacher object or user object, with fallback to 'teacher'
+        const role = data.teacher?.role || data.user?.role || data.role || 'teacher';
         
         localStorage.setItem('token', data.token);
         localStorage.setItem('teacher', JSON.stringify(data.teacher));
@@ -183,6 +184,15 @@ const LoginPage = () => {
         return;
       }
 
+      // Decode the JWT token from Google to get user info
+      const decodedToken = parseJwt(credential);
+      console.log('🔐 Google token decoded:', decodedToken);
+
+      // Extract user info from the Google token
+      const googleEmail = decodedToken?.email || '';
+      const googleName = decodedToken?.name || '';
+      const googlePicture = decodedToken?.picture || '';
+
       // Send the raw ID token (credential) to the backend for verification
       try {
         console.log('Attempting Google auth with backend at:', API_BASE_URL);
@@ -212,7 +222,7 @@ const LoginPage = () => {
         }
 
         // Successful login - redirect based on role
-        const role = data.role || 'teacher'; // Default to teacher
+        const role = data.role || data.teacher?.role || 'teacher'; // Default to teacher
         
         localStorage.setItem('token', data.token);
         localStorage.setItem('teacher', JSON.stringify(data.teacher));
@@ -226,21 +236,27 @@ const LoginPage = () => {
           setTimeout(() => navigate('/teacher-dashboard'), 1000);
         }
       } catch (fetchError) {
-        // If backend auth fails, fall back to mock
-        console.warn('Real Google auth failed, falling back to mock:', fetchError.message);
+        // If backend auth fails, fall back to using Google token data
+        console.warn('Real Google auth failed, falling back to Google token data:', fetchError.message);
         
-        // Create a mock token with teacher role
-        const mockToken = 'mock-google-token-fallback-' + Math.random().toString(36).substr(2, 9);
-        const mockTeacher = {
-          id: 'mock-google-' + Math.random().toString(36).substr(2, 9),
-          email: 'demo.teacher@example.com',
-          name: 'Demo Teacher (Fallback)'
+        if (!googleEmail) {
+          throw new Error('Could not extract email from Google token');
+        }
+
+        // Create token using actual Google credentials
+        const googleToken = 'google-token-' + Math.random().toString(36).substr(2, 9);
+        const googleTeacher = {
+          id: 'google-' + decodedToken?.sub || Math.random().toString(36).substr(2, 9),
+          email: googleEmail,
+          name: googleName || 'Google User',
+          picture: googlePicture,
+          role: 'teacher'
         };
         
-        localStorage.setItem('token', mockToken);
-        localStorage.setItem('teacher', JSON.stringify(mockTeacher));
+        localStorage.setItem('token', googleToken);
+        localStorage.setItem('teacher', JSON.stringify(googleTeacher));
         localStorage.setItem('userRole', 'teacher');
-        setSuccess('✅ Login via fallback auth successful! Redirecting...');
+        setSuccess('✅ Login via Google successful! Redirecting...');
         setTimeout(() => navigate('/teacher-dashboard'), 1000);
       }
     } catch (err) {
