@@ -30,36 +30,38 @@ FRONTEND_URL = os.getenv(
     "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app"
 )
 
-# CORS Configuration
+# List of allowed origins
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    FRONTEND_URL,
+]
+
+# Function to check if origin is allowed (supports vercel.app wildcard)
+def is_allowed_origin(origin):
+    if origin in ALLOWED_ORIGINS:
+        return True
+    if origin and "vercel.app" in origin:
+        return True
+    return False
+
+# CORS Configuration with custom handler
 CORS(
     app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "http://localhost:3001",
-                "http://127.0.0.1:3001",
-                FRONTEND_URL,
-                "*.vercel.app"  # Allow all vercel.app subdomains
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,  # ✅ Enable credentials support
-            "max_age": 86400
-        }
-    },
-    origins=[
-        "http://localhost:3001",
-        "http://127.0.0.1:3001",
-        FRONTEND_URL,
-        "*.vercel.app"
-    ],
-    supports_credentials=True  # ✅ Enable credentials support
+    origins=is_allowed_origin,
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept"],
+    expose_headers=["Content-Type", "Authorization"],
+    supports_credentials=True,
+    max_age=86400
 )
 
 logger.info("🔧 CORS Configuration:")
 logger.info(f"  Frontend URL: {FRONTEND_URL}")
-logger.info(f"  Allowed Origins: http://localhost:3001, {FRONTEND_URL}, *.vercel.app")
+logger.info(f"  Allowed Origins: {ALLOWED_ORIGINS}")
+logger.info(f"  Wildcard: *.vercel.app")
 
 # =============================
 # AUTH SERVICE
@@ -73,6 +75,33 @@ except Exception as e:
     logger.warning(f"⚠️ MONGODB_DATABASE: {os.getenv('MONGODB_DATABASE', 'NOT SET')}")
     logger.warning("⚠️ Teacher login will use fallback demo mode")
     auth_service = None
+
+# =============================
+# EXPLICIT CORS HANDLER
+# =============================
+@app.before_request
+def handle_preflight():
+    """Handle preflight requests"""
+    if request.method == "OPTIONS":
+        origin = request.headers.get("Origin", "")
+        if is_allowed_origin(origin):
+            response = make_response("", 204)
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            return response
+        return "", 403
+
+@app.after_request
+def after_request(response):
+    """Add CORS headers to all responses"""
+    origin = request.headers.get("Origin", "")
+    if is_allowed_origin(origin):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Vary"] = "Origin"
+    return response
 
 # =============================
 # ROUTES
