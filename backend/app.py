@@ -42,13 +42,13 @@ ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://127.0.0.1:3001",
     FRONTEND_URL,
-    "https://classroom-assistant-backend.vercel.app",
 ]
 
 # Function to check if origin is allowed (supports vercel.app wildcard)
 def is_allowed_origin(origin):
     if origin in ALLOWED_ORIGINS:
         return True
+    # Allow all *.vercel.app origins for Vercel deployments
     if origin and "vercel.app" in origin:
         return True
     return False
@@ -109,10 +109,19 @@ def handle_preflight():
 def after_request(response):
     """Add CORS headers to all responses"""
     origin = request.headers.get("Origin", "")
+    logger.debug(f"🔍 CORS check - Origin: {origin}, Allowed: {is_allowed_origin(origin)}")
+    
     if is_allowed_origin(origin):
         response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
         response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Max-Age"] = "86400"
         response.headers["Vary"] = "Origin"
+        logger.debug(f"✅ CORS headers added for origin: {origin}")
+    else:
+        logger.warning(f"⚠️ CORS rejected for origin: {origin}")
+    
     return response
 
 # =============================
