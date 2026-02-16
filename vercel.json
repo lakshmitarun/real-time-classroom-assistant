@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "name": "frontend",
+      "path": "frontend",
+      "buildCommand": "npm run build",
+      "installCommand": "npm install --legacy-peer-deps",
+      "outputDirectory": "build"
+    },
+    {
+      "name": "backend",
+      "path": "backend",
+      "buildCommand": "pip install -r requirements.txt",
+      "outputDirectory": "."
+    }
+  ]
+}
