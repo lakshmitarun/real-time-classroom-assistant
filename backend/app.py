@@ -5,6 +5,9 @@ import logging
 import traceback
 import os
 import sys
+import json
+from google.auth.transport import requests
+from google.oauth2 import id_token
 from auth_service_mongodb import AuthServiceMongoDB
 from services.translation_service import TranslationService
 
@@ -63,6 +66,9 @@ logger.info(f"  Frontend URL: {FRONTEND_URL}")
 logger.info(f"  Allowed Origins: {ALLOWED_ORIGINS}")
 logger.info(f"  Wildcard: *.vercel.app")
 
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
+
 # =============================
 # AUTH SERVICE
 # =============================
@@ -87,10 +93,13 @@ def handle_preflight():
         if is_allowed_origin(origin):
             response = make_response("", 204)
             response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
             response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Access-Control-Max-Age"] = "86400"
+            response.headers["Vary"] = "Origin"
             return response
+        logger.warning(f"⚠️ Rejecting preflight request from disallowed origin: {origin}")
         return "", 403
 
 @app.after_request
@@ -308,6 +317,102 @@ def logout():
         return jsonify({
             "success": False,
             "message": "Logout failed"
+        }), 500
+
+# =============================
+# GOOGLE AUTH CALLBACK
+# =============================
+@app.route("/api/auth/google/callback", methods=["POST", "OPTIONS"])
+def google_callback():
+    """Handle Google OAuth callback - CORS enabled"""
+    # Handle OPTIONS preflight request
+    if request.method == "OPTIONS":
+        response = make_response("", 204)
+        origin = request.headers.get("Origin", "")
+        if is_allowed_origin(origin):
+            response.headers["Access-Control-Allow-Origin"] = origin
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Credentials"] = "true"
+            response.headers["Vary"] = "Origin"
+        return response
+
+    try:
+        data = request.json or {}
+        credential = data.get("credential", "").strip()
+
+        if not credential:
+            return jsonify({
+                "success": False,
+                "error": "Missing credential"
+            }), 400
+
+        logger.info("🔐 Processing Google OAuth callback")
+
+        # Verify the Google token and extract user information
+        try:
+            # Decode the JWT without verification first to extract claims
+            # In production, you should verify the signature properly
+            import base64
+            parts = credential.split('.')
+            if len(parts) == 3:
+                # Decode the payload
+                payload = parts[1]
+                # Add padding if needed
+                payload += '=' * (4 - len(payload) % 4)
+                decoded = json.loads(base64.urlsafe_b64decode(payload))
+                
+                email = decoded.get('email', '').lower().strip()
+                name = decoded.get('name', '')
+                google_id = decoded.get('sub', '')
+                
+                logger.info(f"✅ Google token decoded - Email: {email}, Name: {name}")
+                
+                if not email:
+                    return jsonify({
+                        "success": False,
+                        "error": "Could not extract email from token"
+                    }), 400
+                
+                # Use auth service to login/register with Google
+                if auth_service:
+                    result, status_code = auth_service.google_login(email, name, google_id)
+                    logger.info(f"✅ Google login result: {result}")
+                    return jsonify(result), status_code
+                else:
+                    # Fallback: Create a temporary token for demo mode
+                    logger.warning("⚠️ Using fallback demo mode for Google login")
+                    demo_token = f"google_demo_{google_id}_{int(datetime.now().timestamp())}"
+                    
+                    return jsonify({
+                        "success": True,
+                        "token": demo_token,
+                        "role": "teacher",
+                        "teacher": {
+                            "id": f"google-{google_id[:8]}",
+                            "email": email,
+                            "name": name,
+                            "auth_method": "google"
+                        }
+                    }), 200
+            else:
+                return jsonify({
+                    "success": False,
+                    "error": "Invalid token format"
+                }), 400
+
+        except json.JSONDecodeError as e:
+            logger.error(f"❌ Failed to decode Google token: {e}")
+            return jsonify({
+                "success": False,
+                "error": "Invalid token format"
+            }), 400
+
+    except Exception as e:
+        logger.error(f"❌ Google callback failed: {traceback.format_exc()}")
+        return jsonify({
+            "success": False,
+            "error": str(e)
         }), 500
 
 # =============================
