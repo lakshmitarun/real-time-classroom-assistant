@@ -10,6 +10,8 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 from auth_service_mongodb import AuthServiceMongoDB
 from services.translation_service import TranslationService
+# Import route blueprints
+from routes import auth_bp, user_bp
 
 # =============================
 # APP + LOGGING
@@ -111,6 +113,17 @@ def after_request(response):
         response.headers["Access-Control-Allow-Credentials"] = "true"
         response.headers["Vary"] = "Origin"
     return response
+
+# =============================
+# REGISTER BLUEPRINTS
+# =============================
+# Register route blueprints for modular structure
+app.register_blueprint(auth_bp)
+app.register_blueprint(user_bp)
+
+logger.info("✅ Blueprints registered:")
+logger.info("   - /api/auth/* (Authentication routes)")
+logger.info("   - /api/user/* (User profile routes)")
 
 # =============================
 # ROUTES
