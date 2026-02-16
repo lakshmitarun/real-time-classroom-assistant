@@ -29,7 +29,6 @@ const StudentView = () => {
   const [currentJoinCode, setCurrentJoinCode] = useState('');
   const [classEnded, setClassEnded] = useState(false); // ← NEW: Track if class ended
   const [classEndedMessage, setClassEndedMessage] = useState(''); // ← NEW: Store class ended message
-  const [lastContentTimestamp, setLastContentTimestamp] = useState('');
   const noContentCountRef = useRef(0); // ← NEW: Track consecutive 404s
 
   // =========================
@@ -185,7 +184,6 @@ const StudentView = () => {
         setJoinedByCode(true);
         setIsConnected(true);
         setJoinCodeInput('');
-        setLastContentTimestamp('');
       } else {
         setJoinError(res.data.message || 'Join failed');
       }
@@ -227,7 +225,6 @@ const StudentView = () => {
           
           setEnglishSubtitle(englishText);
           setTranslatedSubtitle(translation || '— (not found in dataset)');
-          setLastContentTimestamp(res.data.timestamp);
           
           console.log(`[${selectedLanguage.toUpperCase()}] Received:`, translation);
           
