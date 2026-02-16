@@ -14,14 +14,14 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 logger = logging.getLogger(__name__)
 
 
-@auth_bp.route('/google/callback', methods=['POST'])
+@auth_bp.route('/google/callback', methods=['POST', 'OPTIONS'])
 def google_callback():
     """
     Google OAuth Callback Endpoint
     
     Expects JSON:
     {
-        "token": "<Google ID Token>",
+        "credential": "<Google ID Token>" OR "token": "<Google ID Token>",
         "role": "teacher" (optional, defaults to "teacher")
     }
     
@@ -38,6 +38,10 @@ def google_callback():
         }
     }
     """
+    # Handle preflight requests
+    if request.method == 'OPTIONS':
+        return '', 204
+    
     try:
         data = request.get_json()
         
@@ -48,7 +52,9 @@ def google_callback():
                 'error': 'Request body is empty'
             }), 400
         
-        google_token = data.get('token', '').strip()
+        # Support both 'credential' (from frontend) and 'token' (from API)
+        google_token = data.get('credential') or data.get('token', '')
+        google_token = google_token.strip()
         role = data.get('role', 'teacher').lower()
         
         if not google_token:
