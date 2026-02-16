@@ -1,6 +1,15 @@
 {
-  "buildCommand": "pip install -r requirements.txt",
-  "outputDirectory": ".",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "api/index.py"
+    }
+  ],
   "env": {
     "FLASK_ENV": "production",
     "MONGODB_URI": "@mongodb_uri",
@@ -8,10 +17,5 @@
     "JWT_SECRET_KEY": "@jwt_secret_key",
     "FRONTEND_URL": "@frontend_url",
     "ALLOWED_ORIGINS": "@allowed_origins"
-  },
-  "functions": {
-    "api/index.py": {
-      "runtime": "python3.9"
-    }
   }
 }
