@@ -156,9 +156,11 @@ def health():
 # =============================
 # STUDENT LOGIN
 # =============================
-@app.route("/api/student/login", methods=["POST"])
+@app.route("/api/student/login", methods=["POST", "OPTIONS"])
 def student_login():
     """Student login endpoint - CORS handled by Flask-CORS"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
 
@@ -207,9 +209,11 @@ def student_login():
 # =============================
 # TEACHER LOGIN
 # =============================
-@app.route("/api/auth/login", methods=["POST"])
+@app.route("/api/auth/login", methods=["POST", "OPTIONS"])
 def teacher_login():
     """Teacher login endpoint - Uses MongoDB auth"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         email = data.get("email", "").strip()
@@ -266,9 +270,11 @@ def teacher_login():
 # =============================
 # TEACHER REGISTRATION
 # =============================
-@app.route("/api/auth/register", methods=["POST"])
+@app.route("/api/auth/register", methods=["POST", "OPTIONS"])
 def teacher_register():
     """Teacher registration endpoint"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         email = data.get("email", "").strip()
@@ -326,9 +332,11 @@ def teacher_register():
 # =============================
 # LOGOUT
 # =============================
-@app.route("/api/logout", methods=["POST"])
+@app.route("/api/logout", methods=["POST", "OPTIONS"])
 def logout():
     """Logout endpoint - just returns success"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         logger.info("👋 User logged out")
         return jsonify({
@@ -488,9 +496,11 @@ def translate():
             "error": str(e)
         }), 500
 
-@app.route("/api/translate/batch", methods=["POST"])
+@app.route("/api/translate/batch", methods=["POST", "OPTIONS"])
 def translate_batch():
     """Translate text to Bodo and Mizo"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         texts = data.get("texts", [])
@@ -533,9 +543,11 @@ def translate_batch():
 # =============================
 # TEACHER ENDPOINTS
 # =============================
-@app.route("/api/teacher/start-class", methods=["POST"])
+@app.route("/api/teacher/start-class", methods=["POST", "OPTIONS"])
 def start_class():
     """Start a class session"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         teacher_id = data.get("teacherId")
@@ -566,9 +578,11 @@ def start_class():
             "error": str(e)
         }), 500
 
-@app.route("/api/teacher/end-class", methods=["POST"])
+@app.route("/api/teacher/end-class", methods=["POST", "OPTIONS"])
 def end_class():
     """End a class session"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         teacher_id = data.get("teacherId")
@@ -593,9 +607,11 @@ def end_class():
             "message": "Failed to end class"
         }), 500
 
-@app.route("/api/teacher/stop-class", methods=["POST"])
+@app.route("/api/teacher/stop-class", methods=["POST", "OPTIONS"])
 def stop_class():
     """Stop a class session and clear broadcasts"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         join_code = data.get("joinCode")
@@ -623,9 +639,11 @@ def stop_class():
             "message": "Failed to end class"
         }), 500
 
-@app.route("/api/teacher/broadcast", methods=["POST"])
+@app.route("/api/teacher/broadcast", methods=["POST", "OPTIONS"])
 def broadcast_content():
     """Broadcast content to students"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         teacher_id = data.get("teacherId")
@@ -664,9 +682,11 @@ def broadcast_content():
             "message": "Failed to broadcast"
         }), 500
 
-@app.route("/api/teacher/broadcast-speech", methods=["POST"])
+@app.route("/api/teacher/broadcast-speech", methods=["POST", "OPTIONS"])
 def broadcast_speech():
     """Alias endpoint for backward compatibility"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         join_code = data.get("joinCode")
@@ -703,9 +723,11 @@ def broadcast_speech():
             "message": "Failed to broadcast"
         }), 500
 
-@app.route("/api/student/join", methods=["POST"])
+@app.route("/api/student/join", methods=["POST", "OPTIONS"])
 def student_join():
     """Student join a class"""
+    if request.method == "OPTIONS":
+        return "", 204
     try:
         data = request.json or {}
         student_id = data.get("studentId")
