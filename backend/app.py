@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 broadcasts_store = {}
 
 # =============================
-# CORS CONFIG - Using Flask-CORS
+# CORS CONFIG - Using Flask-CORS (PRODUCTION OPTIMIZED)
 # =============================
 # Get frontend URL from environment variable or use defaults
 FRONTEND_URL = os.getenv(
@@ -35,39 +35,30 @@ FRONTEND_URL = os.getenv(
     "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app"
 )
 
-# List of allowed origins
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    FRONTEND_URL,
-]
-
-# Function to check if origin is allowed (supports vercel.app wildcard)
-def is_allowed_origin(origin):
-    if origin in ALLOWED_ORIGINS:
-        return True
-    # Allow all *.vercel.app origins for Vercel deployments
-    if origin and "vercel.app" in origin:
-        return True
-    return False
-
-# CORS Configuration with custom handler
+# Best production CORS configuration - specific origin only
 CORS(
     app,
-    origins=is_allowed_origin,
-    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
-    expose_headers=["Content-Type", "Authorization"],
-    supports_credentials=True,
-    max_age=86400
+    resources={
+        r"/api/*": {
+            "origins": [
+                "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app",
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://127.0.0.1:3000",
+                "http://127.0.0.1:3001",
+            ],
+            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+            "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+            "expose_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+            "max_age": 86400
+        }
+    }
 )
 
-logger.info("🔧 CORS Configuration:")
+logger.info("🔧 CORS Configuration (Production):")
 logger.info(f"  Frontend URL: {FRONTEND_URL}")
-logger.info(f"  Allowed Origins: {ALLOWED_ORIGINS}")
-logger.info(f"  Wildcard: *.vercel.app")
+logger.info(f"  CORS enabled for /api/* endpoints")
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
@@ -84,45 +75,6 @@ except Exception as e:
     logger.warning(f"⚠️ MONGODB_DATABASE: {os.getenv('MONGODB_DATABASE', 'NOT SET')}")
     logger.warning("⚠️ Teacher login will use fallback demo mode")
     auth_service = None
-
-# =============================
-# EXPLICIT CORS HANDLER
-# =============================
-@app.before_request
-def handle_preflight():
-    """Handle preflight requests"""
-    if request.method == "OPTIONS":
-        origin = request.headers.get("Origin", "")
-        if is_allowed_origin(origin):
-            response = make_response("", 204)
-            response.headers["Access-Control-Allow-Origin"] = origin
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
-            response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Max-Age"] = "86400"
-            response.headers["Vary"] = "Origin"
-            return response
-        logger.warning(f"⚠️ Rejecting preflight request from disallowed origin: {origin}")
-        return "", 403
-
-@app.after_request
-def after_request(response):
-    """Add CORS headers to all responses"""
-    origin = request.headers.get("Origin", "")
-    logger.debug(f"🔍 CORS check - Origin: {origin}, Allowed: {is_allowed_origin(origin)}")
-    
-    if is_allowed_origin(origin):
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS, PATCH"
-        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Accept, X-Requested-With"
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Max-Age"] = "86400"
-        response.headers["Vary"] = "Origin"
-        logger.debug(f"✅ CORS headers added for origin: {origin}")
-    else:
-        logger.warning(f"⚠️ CORS rejected for origin: {origin}")
-    
-    return response
 
 # =============================
 # REGISTER BLUEPRINTS
