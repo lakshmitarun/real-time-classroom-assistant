@@ -14,9 +14,9 @@ class AuthServiceMongoDB:
     def __init__(self, secret_key='your-secret-key-change-this'):
         self.secret_key = secret_key
         self.mongo_uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
-        self.database_name = os.getenv('MONGODB_DATABASE', 'classroomassisstant')
-        self.collection_name = 'teachersignup'
-        self.student_collection_name = 'student'
+        self.database_name = os.getenv('MONGODB_DATABASE', 'classroom_asisstant')
+        self.student_collection_name = os.getenv('MONGODB_STUDENT_COLLECTION', 'student_login')
+        self.teacher_collection_name = os.getenv('MONGODB_TEACHER_COLLECTION', 'teacherlogin')
         
         # Initialize MongoDB connection
         self.client = None
@@ -32,16 +32,23 @@ class AuthServiceMongoDB:
             # Test connection
             self.client.admin.command('ping')
             self.db = self.client[self.database_name]
-            self.collection = self.db[self.collection_name]
+            self.collection = self.db[self.teacher_collection_name]
             self.student_collection = self.db[self.student_collection_name]
             
-            # Create index on email for faster lookups
-            self.collection.create_index('email', unique=True)
-            # Create index on user_id for student collection
-            self.student_collection.create_index('user_id', unique=True)
+            # Create index on email for teachers
+            try:
+                self.collection.create_index('email', unique=True)
+            except Exception:
+                pass  # Index may already exist
+            
+            # Create index on username for students (roll number)
+            try:
+                self.student_collection.create_index('username', unique=True)
+            except Exception:
+                pass  # Index may already exist
             
             print(f"[OK] Connected to MongoDB - Database: {self.database_name}")
-            print(f"[OK] Teacher Collection: {self.collection_name}")
+            print(f"[OK] Teacher Collection: {self.teacher_collection_name}")
             print(f"[OK] Student Collection: {self.student_collection_name}")
         except Exception as e:
             print(f"[ERROR] Failed to connect to MongoDB: {e}")
@@ -240,11 +247,12 @@ class AuthServiceMongoDB:
             return None
     
     def student_login(self, user_id, password):
-        """Login student with user ID and password"""
+        """Login student with user ID (username) and password"""
         user_id = user_id.strip()
         
         try:
-            student = self.student_collection.find_one({'user_id': user_id})
+            # Search by username (roll number)
+            student = self.student_collection.find_one({'username': user_id})
             
             if not student:
                 return {'success': False, 'message': 'Invalid user ID or password'}, 401
@@ -273,13 +281,13 @@ class AuthServiceMongoDB:
             )
             
             # Generate JWT token
-            token = self.generate_token(student['user_id'], student['user_id'])
+            token = self.generate_token(student['username'], student['username'])
             
             return ({
                 'success': True,
                 'message': 'Login successful',
-                'userId': student['user_id'],
-                'name': student.get('name', student['user_id']),
+                'userId': student['username'],
+                'name': student.get('name', student['username']),
                 'role': 'student',
                 'preferredLanguage': student.get('preferred_language', ''),
                 'token': token

@@ -36,15 +36,19 @@ const StudentView = () => {
   // =========================
   useEffect(() => {
     const savedSession = localStorage.getItem('studentSession');
+    console.log('📦 Saved Session from localStorage:', savedSession);
     if (savedSession) {
       try {
         const data = JSON.parse(savedSession);
+        console.log('✅ Restored Student Data:', data);
+        console.log('   Name:', data.name);
         setStudentData(data);
         setIsLoggedIn(true);
         if (data.preferredLanguage) {
           setSelectedLanguage(data.preferredLanguage.toLowerCase());
         }
-      } catch {
+      } catch (e) {
+        console.error('❌ Failed to parse savedSession:', e);
         localStorage.removeItem('studentSession');
       }
     }
@@ -85,11 +89,15 @@ const StudentView = () => {
           preferredLanguage: response.data.preferredLanguage
         };
         
-        console.log('📊 Student Data:', userData);
+        console.log('📊 Response Data from API:', response.data);
+        console.log('📊 Student Data Extracted:', userData);
+        console.log('✅ Name field:', userData.name);
+        console.log('✅ UserId field:', userData.userId);
         
         setStudentData(userData);
         setIsLoggedIn(true);
 
+        console.log('💾 Saving to localStorage:', userData);
         localStorage.setItem('studentSession', JSON.stringify(userData));
         localStorage.setItem('userRole', userData.role);
         localStorage.setItem('token', userData.token);

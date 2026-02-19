@@ -112,13 +112,13 @@ def google_callback():
                 result, status_code = auth_service.google_login(email, name, google_id)
                 
                 if result.get('success'):
-                    # Get user data from result
-                    user_data = result.get('user', {})
+                    # Get teacher data from result (auth_service returns 'teacher' not 'user')
+                    teacher_data = result.get('teacher', {})
                     
                     # Generate JWT token
                     try:
                         jwt_token = jwt_handler.generate_token({
-                            '_id': user_data.get('id') or user_data.get('_id'),
+                            '_id': teacher_data.get('id') or teacher_data.get('_id'),
                             'email': email,
                             'name': name,
                             'role': role
@@ -127,16 +127,20 @@ def google_callback():
                         logger.info(f"✅ JWT token generated for Google login: {email}")
                         
                         # Return response with JWT token
+                        # Include both 'user' and 'teacher' fields for frontend compatibility
+                        user_obj = {
+                            'id': teacher_data.get('id') or teacher_data.get('_id'),
+                            'email': email,
+                            'name': name,
+                            'role': role
+                        }
                         return jsonify({
                             'success': True,
                             'message': 'Google login successful',
                             'token': jwt_token,
-                            'user': {
-                                'id': user_data.get('id') or user_data.get('_id'),
-                                'email': email,
-                                'name': name,
-                                'role': role
-                            }
+                            'role': role,
+                            'user': user_obj,
+                            'teacher': user_obj
                         }), 200
                     
                     except Exception as e:
@@ -155,16 +159,19 @@ def google_callback():
                 logger.warning(f"⚠️ Using fallback mode for Google login")
                 demo_token = f"demo_{google_id}_{int(datetime.now().timestamp())}"
                 
+                fallback_user = {
+                    'id': f'google-{google_id[:8]}',
+                    'email': email,
+                    'name': name,
+                    'role': role
+                }
                 return jsonify({
                     'success': True,
                     'message': 'Login successful (Fallback Mode)',
                     'token': demo_token,
-                    'user': {
-                        'id': f'google-{google_id[:8]}',
-                        'email': email,
-                        'name': name,
-                        'role': role
-                    }
+                    'role': role,
+                    'user': fallback_user,
+                    'teacher': fallback_user
                 }), 200
         
         except json.JSONDecodeError as e:
@@ -249,8 +256,10 @@ def login():
                     
                     logger.info(f"✅ JWT token generated for login: {email}")
                     
-                    # Add token to response
+                    # Add token to response and ensure both 'user' and 'teacher' fields
                     result['token'] = jwt_token
+                    result['role'] = user_data.get('role', 'teacher')
+                    result['teacher'] = user_data  # Add teacher field for frontend
                     return jsonify(result), status_code
                 
                 except Exception as e:
