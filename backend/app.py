@@ -27,38 +27,26 @@ logger = logging.getLogger(__name__)
 broadcasts_store = {}
 
 # =============================
-# CORS CONFIG - Using Flask-CORS (PRODUCTION OPTIMIZED)
 # =============================
-# Get frontend URL from environment variable or use defaults
-FRONTEND_URL = os.getenv(
-    "FRONTEND_URL",
-    "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app"
-)
+# CORS CONFIG - Using Flask-CORS (SIMPLE & RELIABLE)
+# =============================
 
-# Best production CORS configuration - specific origin only
-CORS(
-    app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app",
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://127.0.0.1:3000",
-                "http://127.0.0.1:3001",
-            ],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-            "allow_headers": ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
-            "max_age": 86400
-        }
-    }
-)
+# Simple CORS configuration that works reliably on Vercel
+CORS(app, 
+     origins=["https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app",
+              "http://localhost:3000",
+              "http://localhost:3001",
+              "http://127.0.0.1:3000",
+              "http://127.0.0.1:3001"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+     expose_headers=["Content-Type", "Authorization"],
+     supports_credentials=True,
+     max_age=86400)
 
-logger.info("🔧 CORS Configuration (Production):")
-logger.info(f"  Frontend URL: {FRONTEND_URL}")
-logger.info(f"  CORS enabled for /api/* endpoints")
+logger.info("🔧 CORS Configuration (Simple & Reliable):")
+logger.info(f"  ✅ CORS enabled for all /api/* endpoints")
+logger.info(f"  ✅ Frontend: https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app")
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
