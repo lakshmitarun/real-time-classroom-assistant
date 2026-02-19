@@ -27,26 +27,23 @@ logger = logging.getLogger(__name__)
 broadcasts_store = {}
 
 # =============================
+# CORS CONFIG - WILDCARD (FIXES VERCEL CORS ISSUES)
 # =============================
-# CORS CONFIG - Using Flask-CORS (SIMPLE & RELIABLE)
-# =============================
+# Allow all origins with wildcard - best for testing and production on Vercel
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# Simple CORS configuration that works reliably on Vercel
-CORS(app, 
-     origins=["https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app",
-              "http://localhost:3000",
-              "http://localhost:3001",
-              "http://127.0.0.1:3000",
-              "http://127.0.0.1:3001"],
-     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-     allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
-     expose_headers=["Content-Type", "Authorization"],
-     supports_credentials=True,
-     max_age=86400)
+# Add CORS headers to all responses
+@app.after_request
+def after_request(response):
+    """Add CORS headers to every response"""
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    return response
 
-logger.info("🔧 CORS Configuration (Simple & Reliable):")
-logger.info(f"  ✅ CORS enabled for all /api/* endpoints")
-logger.info(f"  ✅ Frontend: https://real-time-classroom-git-c4ab73-palivela-lakshmi-taruns-projects.vercel.app")
+logger.info("🔧 CORS Configuration (Wildcard - Vercel Compatible):")
+logger.info(f"  ✅ Allow all origins (*)")
+logger.info(f"  ✅ after_request handler active")
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
