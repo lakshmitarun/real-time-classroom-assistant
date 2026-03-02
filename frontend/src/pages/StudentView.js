@@ -426,37 +426,97 @@ const StudentView = () => {
             )}
           </div>
 
-          <div className="join-class-section card">
-            <h3>Join Class</h3>
-            
-            {!languageSelected ? (
-              <>
-                <p style={{ marginBottom: '20px', color: '#666' }}>
-                  Select your preferred translation language:
-                </p>
-                <div className="language-selection">
-                  <button
-                    className={`language-btn ${selectedLanguage === 'bodo' ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedLanguage('bodo');
-                      setLanguageSelected(true);
-                    }}
-                  >
-                    Bodo
-                  </button>
-                  <button
-                    className={`language-btn ${selectedLanguage === 'mizo' ? 'active' : ''}`}
-                    onClick={() => {
-                      setSelectedLanguage('mizo');
-                      setLanguageSelected(true);
-                    }}
-                  >
-                    Mizo
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
+          {!joinedByCode ? (
+            <div className="join-class-section card">
+              <h3>Join Class</h3>
+              
+              {!languageSelected ? (
+                <>
+                  <p style={{ marginBottom: '20px', color: '#666' }}>
+                    Select your preferred translation language:
+                  </p>
+                  <div className="language-selection">
+                    <button
+                      className={`language-btn ${selectedLanguage === 'bodo' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedLanguage('bodo');
+                        setLanguageSelected(true);
+                      }}
+                    >
+                      Bodo
+                    </button>
+                    <button
+                      className={`language-btn ${selectedLanguage === 'mizo' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedLanguage('mizo');
+                        setLanguageSelected(true);
+                      }}
+                    >
+                      Mizo
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="language-info">
+                    <p><Megaphone size={18} style={{display: 'inline-block', marginRight: '8px', verticalAlign: 'middle'}} /> Language: <strong>{selectedLanguage.toUpperCase()}</strong></p>
+                    <button 
+                      className="btn-text"
+                      onClick={() => setLanguageSelected(false)}
+                      style={{ fontSize: '12px', marginTop: '8px' }}
+                    >
+                      Change Language
+                    </button>
+                  </div>
+                  
+                  <div className="form-group" style={{ marginTop: '15px' }}>
+                    <label>Enter join code:</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., GOOG1234"
+                      value={joinCodeInput}
+                      onChange={(e) => setJoinCodeInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
+                    />
+                    <button className="btn btn-primary" onClick={handleJoinByCode}>
+                      Join Class
+                    </button>
+                  </div>
+                  {joinError && <div className="error-message">{joinError}</div>}
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="join-class-section card">
+              <h3>Language Selection</h3>
+              
+              {!languageSelected ? (
+                <>
+                  <p style={{ marginBottom: '20px', color: '#666' }}>
+                    Select your preferred translation language:
+                  </p>
+                  <div className="language-selection">
+                    <button
+                      className={`language-btn ${selectedLanguage === 'bodo' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedLanguage('bodo');
+                        setLanguageSelected(true);
+                      }}
+                    >
+                      Bodo
+                    </button>
+                    <button
+                      className={`language-btn ${selectedLanguage === 'mizo' ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedLanguage('mizo');
+                        setLanguageSelected(true);
+                      }}
+                    >
+                      Mizo
+                    </button>
+                  </div>
+                </>
+              ) : (
                 <div className="language-info">
                   <p><Megaphone size={18} style={{display: 'inline-block', marginRight: '8px', verticalAlign: 'middle'}} /> Language: <strong>{selectedLanguage.toUpperCase()}</strong></p>
                   <button 
@@ -467,24 +527,9 @@ const StudentView = () => {
                     Change Language
                   </button>
                 </div>
-                
-                <div className="form-group" style={{ marginTop: '15px' }}>
-                  <label>Enter join code:</label>
-                  <input
-                    type="text"
-                    placeholder="e.g., GOOG1234"
-                    value={joinCodeInput}
-                    onChange={(e) => setJoinCodeInput(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleJoinByCode()}
-                  />
-                  <button className="btn btn-primary" onClick={handleJoinByCode}>
-                    Join Class
-                  </button>
-                </div>
-                {joinError && <div className="error-message">{joinError}</div>}
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {isConnected && (
             <div className="audio-control card">
