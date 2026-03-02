@@ -3871,3 +3871,114 @@ ID,English,Bodo,Mizo,Category
 3869,Agree,सहमत,Pawm,Communication
 3870,Refuse,इंकार,Pawm lo,Communication
 3871,Finish,समाप्त,Tâwp,Actions
+3872,A,?,A,Alphabet
+3873,B,?,B,Alphabet
+3874,C,?,C,Alphabet
+3875,D,?,D,Alphabet
+3876,E,?,E,Alphabet
+3877,F,?,F,Alphabet
+3878,G,?,G,Alphabet
+3879,H,?,H,Alphabet
+3880,I,?,I,Alphabet
+3881,J,?,J,Alphabet
+3882,K,?,K,Alphabet
+3883,L,?,L,Alphabet
+3884,M,?,M,Alphabet
+3885,N,?,N,Alphabet
+3886,O,?,O,Alphabet
+3887,P,?,P,Alphabet
+3888,Q,???,Q,Alphabet
+3889,R,?,R,Alphabet
+3890,S,?,S,Alphabet
+3891,T,?,T,Alphabet
+3892,U,?,U,Alphabet
+3893,V,?,V,Alphabet
+3894,W,?,W,Alphabet
+3895,X,???,X,Alphabet
+3896,Y,?,Y,Alphabet
+3897,Z,?,Z,Alphabet
+3872,A,अ,A,Alphabet
+3873,B,ब,B,Alphabet
+3874,C,च,C,Alphabet
+3875,D,द,D,Alphabet
+3876,E,ए,E,Alphabet
+3877,F,फ,F,Alphabet
+3878,G,ग,G,Alphabet
+3879,H,ह,H,Alphabet
+3880,I,इ,I,Alphabet
+3881,J,ज,J,Alphabet
+3882,K,क,K,Alphabet
+3883,L,ल,L,Alphabet
+3884,M,म,M,Alphabet
+3885,N,न,N,Alphabet
+3886,O,ओ,O,Alphabet
+3887,P,प,P,Alphabet
+3888,Q,क्व,Q,Alphabet
+3889,R,र,R,Alphabet
+3890,S,स,S,Alphabet
+3891,T,त,T,Alphabet
+3892,U,उ,U,Alphabet
+3893,V,व,V,Alphabet
+3894,W,व,W,Alphabet
+3895,X,क्ष,X,Alphabet
+3896,Y,य,Y,Alphabet
+3897,Z,ज,Z,Alphabet
+3898,BOOK,किताब,lehkhabu,A set of pages bound together,Word
+3899,PEN,कलम,kalai,Writing instrument,Word
+3900,DESK,टेबिल,lamta,Furniture for writing,Word
+3901,CHAIR,कुर्सी,kairmi,Furniture to sit,Word
+3902,BOARD,बोर्ड,board,Surface for writing lessons,Word
+3903,CHALK,खड़िया,chalk,Writing material for board,Word
+3904,PENCIL,पेंसिल,pensil,Drawing and writing tool,Word
+3905,PAPER,कागज,kawm,Material for writing,Word
+3906,SCHOOL,स्कूल,hnathawh,Place of learning,Word
+3907,CLASS,कक्षा,thiansok,Group of students,Word
+3908,ONE,एक,khat,First number,Word
+3909,TWO,दो,hnih,Second number,Word
+3910,THREE,तीन,thum,Third number,Word
+3911,FOUR,चार,buai,Fourth number,Word
+3912,FIVE,पांच,panga,Fifth number,Word
+3913,SIX,छः,kua,Sixth number,Word
+3914,SEVEN,सात,sarih,Seventh number,Word
+3915,EIGHT,आठ,sawl,Eighth number,Word
+3916,NINE,नौ,kua-thum,Ninth number,Word
+3917,TEN,दस,sum,Tenth number,Word
+3918,READ,पढ़ना,hmuh,Study written text,Word
+3919,WRITE,लिखना,ziak,Mark words on paper,Word
+3920,STUDY,अध्ययन,chhiar,Learn and practice,Word
+3921,LEARN,सीखना,hnathawh,Gain knowledge,Word
+3922,TEACH,सिखाना,chhiartir,Help others learn,Word
+3923,LISTEN,सुनना,ngaih,Hear carefully,Word
+3924,SPEAK,बोलना,sawi,Use words to communicate,Word
+3925,QUESTION,सवाल,ngaizawng,Ask for information,Word
+3926,ANSWER,उत्तर,sawi,Reply to question,Word
+3927,HOMEWORK,होमवर्क,innghiah,Work done at home,Word
+3928,RED,लाल,thimte,Color of blood,Word
+3929,BLUE,नीला,buong,Color of sky,Word
+3930,GREEN,हरा,zawhchawi,Color of plants,Word
+3931,YELLOW,पीला,buongsuam,Color of sun,Word
+3932,BLACK,काला,sekchai,Darkest color,Word
+3933,WHITE,सफेद,farute,Lightest color,Word
+3934,MATH,गणित,suangzuala,Study of numbers,Word
+3935,SCIENCE,विज्ञान,zikhona,Study of nature,Word
+3936,ENGLISH,अंग्रेजी,English,Language subject,Word
+3937,HISTORY,इतिहास,thufai,Study of past,Word
+3938,GEOGRAPHY,भूगोल,midang,Study of places,Word
+3939,HAPPY,खुश,palh,Feeling of joy,Word
+3940,SAD,दुःख,chhuah,Feeling of sorrow,Word
+3941,GOOD,अच्छा,tha,Positive quality,Word
+3942,BAD,बुरा,lo tha,Negative quality,Word
+3943,SMART,चतुर,hrathiam,Intelligent,Word
+3944,BRAVE,साहसी,niang,Courageous,Word
+3945,SIT,बैठना,thu,Be seated,Word
+3946,STAND,खड़ा होना,theh,Be upright,Word
+3947,RUN,दौड़ना,rawn,Move fast,Word
+3948,WALK,चलना,cham,Move slowly,Word
+3949,SLEEP,सोना,immaih,Rest at night,Word
+3950,WAKE,जागना,harh,Stop sleeping,Word
+3951,HELLO,नमस्ते,chibai,Greeting,Word
+3952,THANK,धन्यवाद,lawm,Express gratitude,Word
+3953,PLEASE,कृपया,rawh,Polite request,Word
+3954,SORRY,क्षमा कीजिए,tiak thlak,Express regret,Word
+3955,YES,हाँ,awle,Affirmative answer,Word
+3956,NO,नहीं,aih,Negative answer,Word

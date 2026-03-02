@@ -1,13 +1,24 @@
 import json
 import os
 import csv
+import re
 
 class TranslationService:
     def __init__(self):
         self.translation_db = self._load_translation_database()
     
+    def _normalize_text(self, text, lang='english'):
+        """Normalize text for searching"""
+        if not text:
+            return ''
+        text = text.strip()
+        # For English and Mizo, use lowercase. For Bodo, preserve case (Devanagari script)
+        if lang in ['english', 'mizo']:
+            text = text.lower()
+        return text
+    
     def _load_translation_database(self):
-        """Load translation database from CSV file"""
+        """Load translation database from CSV file with improved error handling"""
         db = {'english': {}, 'bodo': {}, 'mizo': {}}
         
         # Try to load from the comprehensive dataset
@@ -17,28 +28,61 @@ class TranslationService:
             try:
                 with open(csv_path, 'r', encoding='utf-8') as f:
                     reader = csv.DictReader(f)
+                    count = 0
+                    skipped = 0
+                    
                     for row in reader:
-                        english = row['English'].lower().strip()
-                        bodo = row['Bodo'].strip()
-                        mizo = row['Mizo'].strip()
-                        
-                        # Add to English index
-                        db['english'][english] = {'bodo': bodo, 'mizo': mizo}
-                        
-                        # Debug: print if we find tarun
-                        if english == 'tarun':
-                            print(f"DEBUG: Found tarun -> {bodo}")
-                        
-                        # Add to Bodo index
-                        db['bodo'][bodo.lower()] = {'english': english.capitalize(), 'mizo': mizo}
-                        
-                        # Add to Mizo index
-                        db['mizo'][mizo.lower()] = {'english': english.capitalize(), 'bodo': bodo}
+                        try:
+                            # Handle both column names (ID,English,Bodo,Mizo,Category format)
+                            english = row.get('English', '').strip()
+                            bodo = row.get('Bodo', '').strip()
+                            mizo = row.get('Mizo', '').strip()
+                            
+                            # Skip empty entries
+                            if not english and not bodo and not mizo:
+                                skipped += 1
+                                continue
+                            
+                            # Add to English index (lowercase for case-insensitive search)
+                            if english:
+                                english_lower = self._normalize_text(english, 'english')
+                                if english_lower not in db['english']:
+                                    db['english'][english_lower] = {'bodo': bodo, 'mizo': mizo}
+                            
+                            # Add to Bodo index (exact case preservation for Devanagari)
+                            if bodo and bodo != '?':  # Skip placeholder values
+                                if bodo not in db['bodo']:
+                                    db['bodo'][bodo] = {'english': english.capitalize() if english else '', 'mizo': mizo}
+                            
+                            # Add to Mizo index (lowercase for case-insensitive search)
+                            if mizo and mizo != '?':  # Skip placeholder values
+                                mizo_lower = self._normalize_text(mizo, 'mizo')
+                                if mizo_lower not in db['mizo']:
+                                    db['mizo'][mizo_lower] = {'english': english.capitalize() if english else '', 'bodo': bodo}
+                            
+                            count += 1
+                        except Exception as row_error:
+                            skipped += 1
+                            continue
                 
-                print(f"[SUCCESS] Loaded {len(db['english'])} translations from CSV")
+                print(f"[SUCCESS] Loaded {count} translations from CSV")
+                print(f"  - English entries: {len(db['english'])}")
+                print(f"  - Bodo entries: {len(db['bodo'])}")
+                print(f"  - Mizo entries: {len(db['mizo'])}")
+                print(f"  - Skipped: {skipped}")
+                
+                # Show sample entries (safe for console output)
+                if db['bodo']:
+                    try:
+                        print(f"  - Sample Bodo entry loaded successfully")
+                    except:
+                        pass  # Ignore encoding errors in console output
+                
                 return db
             except Exception as e:
                 print(f"[WARNING] Error loading CSV: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Fallback to hardcoded translations
         print("[WARNING] Using fallback translation database")
@@ -95,7 +139,15 @@ class TranslationService:
                 'अं': {'english': 'Yes', 'mizo': 'Awle'},
                 'नङा': {'english': 'No', 'mizo': 'Aih'},
                 'सान्न्रि': {'english': 'Mathematics', 'mizo': 'Mathematics'},
-                'बिजान': {'english': 'Science', 'mizo': 'Science'}
+                'बिजान': {'english': 'Science', 'mizo': 'Science'},
+                'नायनि फोरमाखौ खेव': {'english': 'Open your notebooks', 'mizo': 'I lehkhabu hawng rawh'},
+                'नायनि किताबखौ बन्द थ': {'english': 'Close your books', 'mizo': 'I lehkhabu khar rawh'},
+                'अननानै फुं': {'english': 'Sit down please', 'mizo': 'Thu rawh le'},
+                'गासै दिंना': {'english': 'Stand up everyone', 'mizo': 'Mi zawng ding rawh'},
+                'नों': {'english': 'You', 'mizo': 'I'},
+                'तुइ': {'english': 'Are', 'mizo': 'law'},
+                'गोबा': {'english': 'Doing', 'mizo': 'tawng'},
+                'सुबुं मा नं थां दङ': {'english': 'Good morning, how are you?', 'mizo': 'Zing tlâm ṭha, i ni ṭha em?'}
             },
             'mizo': {
                 'zing tlâm ṭha': {'english': 'Good morning', 'bodo': 'सुबुं बिहान'},
@@ -107,54 +159,186 @@ class TranslationService:
                 'awle': {'english': 'Yes', 'bodo': 'अं'},
                 'aih': {'english': 'No', 'bodo': 'नङा'},
                 'mathematics': {'english': 'Mathematics', 'bodo': 'सान्न्रि'},
-                'science': {'english': 'Science', 'bodo': 'बिजान'}
+                'science': {'english': 'Science', 'bodo': 'बिजान'},
+                'i lehkhabu hawng rawh': {'english': 'Open your notebooks', 'bodo': 'नायनि फोरमाखौ खेव'},
+                'i lehkhabu khar rawh': {'english': 'Close your books', 'bodo': 'नायनि किताबखौ बन्द थ'},
+                'thu rawh le': {'english': 'Sit down please', 'bodo': 'अननानै फुं'},
+                'mi zawng ding rawh': {'english': 'Stand up everyone', 'bodo': 'गासै दिंना'}
             }
         }
     
+    def _partial_match_search(self, text_normalized, db_dict, lang='english'):
+        """Search for partial/fuzzy matches if exact match fails"""
+        best_match = None
+        best_score = 0
+        
+        # For English/Mizo, use lowercase comparison
+        if lang in ['english', 'mizo']:
+            text_search = text_normalized.lower()
+            for key in db_dict:
+                if key.lower() in text_search or text_search in key.lower():
+                    # Calculate match score (prioritize exact substring over partial)
+                    if key.lower() == text_search:
+                        return key, db_dict[key], 1.0
+                    elif key.lower() in text_search:
+                        score = len(key) / len(text_search)
+                        if score > best_score:
+                            best_match = key
+                            best_score = score
+        else:
+            # For Bodo (Devanagari), use exact matching only
+            for key in db_dict:
+                if key in text_normalized:
+                    return key, db_dict[key], 1.0
+                elif text_normalized in key:
+                    # Partial match
+                    score = len(text_normalized) / len(key)
+                    if score > best_score:
+                        best_match = key
+                        best_score = score
+        
+        if best_match and best_score > 0.5:  # Only return if score is reasonably high
+            return best_match, db_dict[best_match], best_score
+        return None, None, 0
+    
     def translate(self, text, source_lang, target_lang):
-        """Translate text from source language to target language"""
+        """Translate text from source language to target language with improved search"""
         if not text:
             return ''
         
         # Normalize input
-        text_lower = text.lower().strip()
+        text_normalized = self._normalize_text(text, source_lang)
         source_lang = source_lang.lower()
         target_lang = target_lang.lower()
         
         # If source and target are the same, return original text
         if source_lang == target_lang:
-            return text
+            return text.strip()
         
-        # Try exact match first
+        # ========== STEP 1: Try exact match first ==========
         if source_lang in self.translation_db:
-            if text_lower in self.translation_db[source_lang]:
-                translation_entry = self.translation_db[source_lang][text_lower]
-                if target_lang in translation_entry:
-                    return translation_entry[target_lang]
+            # For English, search case-insensitively
+            if source_lang == 'english':
+                if text_normalized in self.translation_db[source_lang]:
+                    translation_entry = self.translation_db[source_lang][text_normalized]
+                    if target_lang in translation_entry:
+                        result = translation_entry[target_lang]
+                        try:
+                            print(f"[EXACT MATCH] {source_lang}->{target_lang}: {repr(text_normalized)}")
+                        except:
+                            pass
+                        return result
+            else:
+                # For Bodo/Mizo, search with exact match first
+                # Try exact match (case-sensitive for Devanagari/Latin)
+                if text_normalized in self.translation_db[source_lang]:
+                    translation_entry = self.translation_db[source_lang][text_normalized]
+                    if target_lang in translation_entry:
+                        result = translation_entry[target_lang]
+                        try:
+                            print(f"[EXACT MATCH] {source_lang}->{target_lang}")
+                        except:
+                            pass
+                        return result
+                
+                # Try case-insensitive match for Bodo/Mizo as fallback
+                text_lower = text.strip().lower()
+                for key in self.translation_db[source_lang]:
+                    if key.lower() == text_lower:
+                        translation_entry = self.translation_db[source_lang][key]
+                        if target_lang in translation_entry:
+                            result = translation_entry[target_lang]
+                            try:
+                                print(f"[CASE-INSENSITIVE MATCH] {source_lang}->{target_lang}")
+                            except:
+                                pass
+                            return result
         
-        # Fallback: Try word-by-word translation
-        words = text_lower.split()
-        translated_words = []
+        # ========== STEP 2: Try transitive translation (source -> English -> target) ==========
+        if source_lang != 'english' and source_lang in self.translation_db:
+            if text_normalized in self.translation_db[source_lang]:
+                translation_entry = self.translation_db[source_lang][text_normalized]
+                if 'english' in translation_entry and translation_entry['english']:
+                    english_text = translation_entry['english']
+                    # Now translate English to target
+                    english_lower = self._normalize_text(english_text, 'english')
+                    if english_lower in self.translation_db['english']:
+                        english_entry = self.translation_db['english'][english_lower]
+                        if target_lang in english_entry:
+                            result = english_entry[target_lang]
+                            try:
+                                print(f"[TRANSITIVE] {source_lang}->{target_lang} via english")
+                            except:
+                                pass
+                            return result
         
-        for word in words:
-            # Remove punctuation for lookup
-            clean_word = word.strip('.,!?;:')
+        # ========== STEP 3: Try partial/fuzzy match ==========
+        if source_lang in self.translation_db:
+            match_key, match_entry, score = self._partial_match_search(
+                text_normalized, 
+                self.translation_db[source_lang], 
+                source_lang
+            )
+            if match_key and match_entry and score > 0.5:
+                # Found a partial match
+                if source_lang == 'english':
+                    if target_lang in match_entry:
+                        result = match_entry[target_lang]
+                        try:
+                            print(f"[PARTIAL MATCH] {source_lang}->{target_lang} (score: {score:.2f})")
+                        except:
+                            pass
+                        return result
+                else:
+                    # For Bodo/Mizo, try transitive through English
+                    if 'english' in match_entry and match_entry['english']:
+                        english_text = match_entry['english']
+                        english_lower = self._normalize_text(english_text, 'english')
+                        if english_lower in self.translation_db['english']:
+                            english_entry = self.translation_db['english'][english_lower]
+                            if target_lang in english_entry:
+                                result = english_entry[target_lang]
+                                try:
+                                    print(f"[PARTIAL TRANSITIVE] {source_lang}->{target_lang} (score: {score:.2f})")
+                                except:
+                                    pass
+                                return result
+        
+        # ========== STEP 4: Word-by-word translation for English only ==========
+        if source_lang == 'english':
+            # Fallback: Try word-by-word translation
+            words = text_normalized.split()
+            translated_words = []
+            found_translations = 0
             
-            if source_lang in self.translation_db and clean_word in self.translation_db[source_lang]:
-                translation_entry = self.translation_db[source_lang][clean_word]
-                if target_lang in translation_entry:
-                    translated_words.append(translation_entry[target_lang])
+            for word in words:
+                # Remove punctuation for lookup
+                clean_word = word.strip('.,!?;:\'"')
+                
+                if clean_word and clean_word in self.translation_db[source_lang]:
+                    translation_entry = self.translation_db[source_lang][clean_word]
+                    if target_lang in translation_entry:
+                        translated_words.append(translation_entry[target_lang])
+                        found_translations += 1
+                    else:
+                        translated_words.append(word)
                 else:
                     translated_words.append(word)
-            else:
-                translated_words.append(word)
+            
+            # If at least one word was translated, return the result
+            if found_translations > 0:
+                translated_text = ' '.join(translated_words)
+                try:
+                    print(f"[WORD-BY-WORD] {source_lang}->{target_lang}: {found_translations}/{len(words)} words")
+                except:
+                    pass
+                return translated_text
         
-        # If at least one word was translated, return the result
-        translated_text = ' '.join(translated_words)
-        if translated_text.lower() != text_lower:
-            return translated_text
-        
-        # Final fallback: return empty string (not found in dataset)
+        # ========== STEP 5: Not found ==========
+        try:
+            print(f"[NOT FOUND] {source_lang}->{target_lang}: '{text}'")
+        except:
+            pass
         return ''
     
     def get_supported_languages(self):

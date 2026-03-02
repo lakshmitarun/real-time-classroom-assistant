@@ -1,5 +1,13 @@
 flask==3.0.0
 flask-cors==4.0.0
 python-dotenv==1.0.0
-google-auth
+google-auth==2.25.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+pymongo==4.6.0
+bcrypt==4.1.1
+pyjwt==2.8.1
+requests==2.31.0
+google-cloud-speech==2.21.0
+google-cloud-translate==3.13.0
 

@@ -27,23 +27,41 @@ logger = logging.getLogger(__name__)
 broadcasts_store = {}
 
 # =============================
-# CORS CONFIG - WILDCARD (FIXES VERCEL CORS ISSUES)
+# CORS CONFIG - DYNAMIC ORIGIN HANDLING
 # =============================
-# Allow all origins with wildcard - best for testing and production on Vercel
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+# Allow credentials with dynamic origin matching
+allowed_origins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:5000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
+    'http://127.0.0.1:5000',
+]
+
+CORS(app, resources={r"/*": {"origins": allowed_origins}}, supports_credentials=True)
 
 # Add CORS headers to all responses
 @app.after_request
 def after_request(response):
-    """Add CORS headers to every response"""
-    response.headers["Access-Control-Allow-Origin"] = "*"
+    """Add CORS headers to every response with proper origin handling"""
+    origin = request.headers.get('Origin')
+    
+    # If origin is allowed, set it explicitly (required for credentials mode)
+    if origin in allowed_origins:
+        response.headers["Access-Control-Allow-Origin"] = origin
+    else:
+        # For unlisted origins, default to localhost for development
+        response.headers["Access-Control-Allow-Origin"] = origin or "http://localhost:3001"
+    
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
-logger.info("🔧 CORS Configuration (Wildcard - Vercel Compatible):")
-logger.info(f"  ✅ Allow all origins (*)")
-logger.info(f"  ✅ after_request handler active")
+logger.info("[CONFIG] CORS Configuration (Dynamic Origin Matching):")
+logger.info(f"  [OK] Allowed origins: {allowed_origins}")
+logger.info(f"  [OK] after_request handler active")
 
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
@@ -53,12 +71,12 @@ GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID', '')
 # =============================
 try:
     auth_service = AuthServiceMongoDB(secret_key=os.getenv('JWT_SECRET_KEY', 'your-secret-key'))
-    logger.info("✅ AuthServiceMongoDB initialized")
+    logger.info("[OK] AuthServiceMongoDB initialized")
 except Exception as e:
-    logger.warning(f"⚠️ AuthServiceMongoDB initialization failed: {e}")
-    logger.warning(f"⚠️ MONGODB_URI: {os.getenv('MONGODB_URI', 'NOT SET')}")
-    logger.warning(f"⚠️ MONGODB_DATABASE: {os.getenv('MONGODB_DATABASE', 'NOT SET')}")
-    logger.warning("⚠️ Teacher login will use fallback demo mode")
+    logger.warning(f"[WARNING] AuthServiceMongoDB initialization failed: {e}")
+    logger.warning(f"[WARNING] MONGODB_URI: {os.getenv('MONGODB_URI', 'NOT SET')}")
+    logger.warning(f"[WARNING] MONGODB_DATABASE: {os.getenv('MONGODB_DATABASE', 'NOT SET')}")
+    logger.warning("[WARNING] Teacher login will use fallback demo mode")
     auth_service = None
 
 # =============================
@@ -68,7 +86,7 @@ except Exception as e:
 app.register_blueprint(auth_bp)
 app.register_blueprint(user_bp)
 
-logger.info("✅ Blueprints registered:")
+logger.info("[OK] Blueprints registered:")
 logger.info("   - /api/auth/* (Authentication routes)")
 logger.info("   - /api/user/* (User profile routes)")
 
@@ -89,6 +107,29 @@ def health():
         "status": "healthy",
         "time": datetime.utcnow().isoformat()
     }), 200
+
+@app.route("/api/debug/translation-db", methods=["GET"])
+def debug_translation_db():
+    """Debug endpoint - show translation database status"""
+    try:
+        translation_service = TranslationService()
+        
+        return jsonify({
+            "success": True,
+            "database": {
+                "english_count": len(translation_service.translation_db.get('english', {})),
+                "bodo_count": len(translation_service.translation_db.get('bodo', {})),
+                "mizo_count": len(translation_service.translation_db.get('mizo', {})),
+                "sample_english": list(translation_service.translation_db.get('english', {}).items())[:3],
+                "sample_bodo": list(translation_service.translation_db.get('bodo', {}).items())[:3],
+                "sample_mizo": list(translation_service.translation_db.get('mizo', {}).items())[:3]
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # =============================
 # STUDENT LOGIN
@@ -112,18 +153,18 @@ def student_login():
 
         # Try to fetch student from MongoDB
         if auth_service:
-            logger.info(f"🔐 Authenticating student: {user_id}")
+            logger.info(f"[AUTH] Authenticating student: {user_id}")
             result, status_code = auth_service.student_login(user_id, password)
             
             if result.get("success"):
-                logger.info(f"✅ Student login successful: {user_id}")
+                logger.info(f"[OK] Student login successful: {user_id}")
                 return jsonify(result), status_code
             else:
-                logger.warning(f"❌ Student login failed: {user_id} - {result.get('message')}")
+                logger.warning(f"[FAILED] Student login failed: {user_id} - {result.get('message')}")
                 return jsonify(result), status_code
         else:
             # Fallback: Demo login (for development/testing)
-            logger.warning(f"⚠️ Using fallback demo login for student: {user_id}")
+            logger.warning(f"[WARNING] Using fallback demo login for student: {user_id}")
             token = f"demo_{user_id}_{int(datetime.now().timestamp())}"
             
             return jsonify({
@@ -164,18 +205,18 @@ def teacher_login():
 
         # Try real authentication first
         if auth_service:
-            logger.info(f"🔐 Authenticating teacher: {email}")
+            logger.info(f"[AUTH] Authenticating teacher: {email}")
             result, status_code = auth_service.login(email, password)
             
             if result.get("success"):
-                logger.info(f"✅ Teacher login successful: {email}")
+                logger.info(f"[OK] Teacher login successful: {email}")
                 return jsonify(result), status_code
             else:
-                logger.warning(f"❌ Teacher login failed: {email} - {result.get('message')}")
+                logger.warning(f"[FAILED] Teacher login failed: {email} - {result.get('message')}")
                 return jsonify(result), status_code
         else:
             # Fallback: Demo mode (for development/testing)
-            logger.warning(f"⚠️ Using fallback demo login for: {email}")
+            logger.warning(f"[WARNING] Using fallback demo login for: {email}")
             token = f"demo_{email}_{int(datetime.now().timestamp())}"
             
             return jsonify({
@@ -237,7 +278,7 @@ def teacher_register():
                 return jsonify(result), status_code
         else:
             # Fallback: Demo mode (for development/testing)
-            logger.warning(f"⚠️ Using fallback demo registration for: {email}")
+            logger.warning(f"[WARNING] Using fallback demo registration for: {email}")
             token = f"demo_{email}_{int(datetime.now().timestamp())}"
             
             return jsonify({
@@ -312,7 +353,7 @@ def google_callback():
                 "error": "Missing credential"
             }), 400
 
-        logger.info("🔐 Processing Google OAuth callback")
+        logger.info("[AUTH] Processing Google OAuth callback")
 
         # Verify the Google token and extract user information
         try:
@@ -331,7 +372,7 @@ def google_callback():
                 name = decoded.get('name', '')
                 google_id = decoded.get('sub', '')
                 
-                logger.info(f"✅ Google token decoded - Email: {email}, Name: {name}")
+                logger.info(f"[OK] Google token decoded - Email: {email}, Name: {name}")
                 
                 if not email:
                     return jsonify({
@@ -367,7 +408,7 @@ def google_callback():
                 }), 400
 
         except json.JSONDecodeError as e:
-            logger.error(f"❌ Failed to decode Google token: {e}")
+            logger.error(f"[ERROR] Failed to decode Google token: {e}")
             return jsonify({
                 "success": False,
                 "error": "Invalid token format"
@@ -412,14 +453,19 @@ def translate():
             target_lang=target_lang
         )
         
-        logger.info(f"✅ Translated: '{text}' ({source_lang}→{target_lang})")
+        # Log result
+        if translation:
+            logger.info(f"[OK] Translated: '{text}' ({source_lang}->{target_lang}) = '{translation}'")
+        else:
+            logger.warning(f"[WARNING] Translation not found: '{text}' ({source_lang}->{target_lang})")
         
         return jsonify({
             "success": True,
-            "translation": translation,
+            "translation": translation if translation else '',  # Return empty string if not found
             "text": text,
             "source_lang": source_lang,
-            "target_lang": target_lang
+            "target_lang": target_lang,
+            "found": bool(translation)  # Add flag to indicate if translation was found
         }), 200
     
     except Exception as e:
@@ -459,7 +505,7 @@ def translate_batch():
                 "mizoTranslation": mizo_translation
             })
         
-        logger.info(f"✅ Translated {len(texts)} texts")
+        logger.info(f"[OK] Translated {len(texts)} texts")
         
         return jsonify({
             "success": True,

@@ -101,8 +101,14 @@ const TranslationTest = () => {
         ]);
 
         setEnglishTranslation(''); // source is English
-        setBodoTranslation(bodoRes.data.translation || 'Translation not found');
-        setMizoTranslation(mizoRes.data.translation || 'Translation not found');
+        const bodo = bodoRes.data.translation ? bodoRes.data.translation : '— (not found in dataset)';
+        const mizo = mizoRes.data.translation ? mizoRes.data.translation : '— (not found in dataset)';
+        setBodoTranslation(bodo);
+        setMizoTranslation(mizo);
+        
+        // Log translation found status
+        if (!bodoRes.data.translation) console.warn('⚠️ Bodo translation not found');
+        if (!mizoRes.data.translation) console.warn('⚠️ Mizo translation not found');
 
       } else if (sourceLanguage === 'bodo') {
         // Bodo → English + Mizo
@@ -119,9 +125,15 @@ const TranslationTest = () => {
           })
         ]);
 
-        setEnglishTranslation(engRes.data.translation || 'Translation not found');
+        const english = engRes.data.translation ? engRes.data.translation : '— (not found in dataset)';
+        const mizo = mizoRes.data.translation ? mizoRes.data.translation : '— (not found in dataset)';
+        setEnglishTranslation(english);
         setBodoTranslation(''); // source is Bodo
-        setMizoTranslation(mizoRes.data.translation || 'Translation not found');
+        setMizoTranslation(mizo);
+        
+        // Log translation found status
+        if (!engRes.data.translation) console.warn('⚠️ English translation not found');
+        if (!mizoRes.data.translation) console.warn('⚠️ Mizo translation not found');
 
       } else if (sourceLanguage === 'mizo') {
         // Mizo → English + Bodo
@@ -138,16 +150,22 @@ const TranslationTest = () => {
           })
         ]);
 
-        setEnglishTranslation(engRes.data.translation || 'Translation not found');
-        setBodoTranslation(bodoRes.data.translation || 'Translation not found');
+        const english = engRes.data.translation ? engRes.data.translation : '— (not found in dataset)';
+        const bodo = bodoRes.data.translation ? bodoRes.data.translation : '— (not found in dataset)';
+        setEnglishTranslation(english);
+        setBodoTranslation(bodo);
         setMizoTranslation(''); // source is Mizo
+        
+        // Log translation found status
+        if (!engRes.data.translation) console.warn('⚠️ English translation not found');
+        if (!bodoRes.data.translation) console.warn('⚠️ Bodo translation not found');
       }
     } catch (err) {
       console.error('Translation error:', err);
       setError('Failed to translate. Make sure the backend is running on port 5000.');
-      setEnglishTranslation('⚠️ Translation service unavailable');
-      setBodoTranslation('⚠️ Translation service unavailable');
-      setMizoTranslation('⚠️ Translation service unavailable');
+      setEnglishTranslation('⚠️ Service unavailable');
+      setBodoTranslation('⚠️ Service unavailable');
+      setMizoTranslation('⚠️ Service unavailable');
     } finally {
       setIsTranslating(false);
     }
