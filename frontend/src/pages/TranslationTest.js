@@ -51,9 +51,9 @@ const TranslationTest = () => {
       'मोजां',
       'अं',
       'नङा',
-      'सान्न्रि',
-      'बिजान',
-      'बुरुं'
+      'बोर्ड आव गोहोम सोद',
+      'पेज पाँच आव गासै फिन',
+      'ब्राय गुसुथि मिथिफोर'
     ],
     mizo: [
       'I lehkhabu hawng rawh',
@@ -287,6 +287,18 @@ const TranslationTest = () => {
             </div>
           )}
 
+          <div style={{
+            backgroundColor: '#e3f2fd',
+            border: '1px solid #90caf9',
+            borderRadius: '4px',
+            padding: '12px',
+            marginTop: '8px',
+            fontSize: '14px',
+            color: '#1565c0'
+          }}>
+            💡 <strong>Tip:</strong> For best results, use the Quick Test Phrases below or phrases from the classroom dataset. Custom phrases may not be found in the database.
+          </div>
+
           <button
             className="btn btn-primary btn-large translate-btn"
             onClick={handleTranslate}
@@ -296,8 +308,6 @@ const TranslationTest = () => {
             {isTranslating ? 'Translating...' : 'Translate'}
           </button>
         </div>
-
-        {/* Quick test phrases */}
         <div className="quick-phrases">
           <h3>Quick Test Phrases:</h3>
           <div className="phrase-buttons">

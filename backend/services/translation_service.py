@@ -223,11 +223,12 @@ class TranslationService:
                     translation_entry = self.translation_db[source_lang][text_normalized]
                     if target_lang in translation_entry:
                         result = translation_entry[target_lang]
-                        try:
-                            print(f"[EXACT MATCH] {source_lang}->{target_lang}: {repr(text_normalized)}")
-                        except:
-                            pass
-                        return result
+                        if result and result.strip():  # Only return if result is not empty
+                            try:
+                                print(f"[EXACT MATCH] {source_lang}->{target_lang}: {repr(text_normalized)}")
+                            except:
+                                pass
+                            return result
             else:
                 # For Bodo/Mizo, search with exact match first
                 # Try exact match (case-sensitive for Devanagari/Latin)
@@ -235,11 +236,12 @@ class TranslationService:
                     translation_entry = self.translation_db[source_lang][text_normalized]
                     if target_lang in translation_entry:
                         result = translation_entry[target_lang]
-                        try:
-                            print(f"[EXACT MATCH] {source_lang}->{target_lang}")
-                        except:
-                            pass
-                        return result
+                        if result and result.strip():  # Only return if result is not empty
+                            try:
+                                print(f"[EXACT MATCH] {source_lang}->{target_lang}")
+                            except:
+                                pass
+                            return result
                 
                 # Try case-insensitive match for Bodo/Mizo as fallback
                 text_lower = text.strip().lower()
@@ -248,11 +250,12 @@ class TranslationService:
                         translation_entry = self.translation_db[source_lang][key]
                         if target_lang in translation_entry:
                             result = translation_entry[target_lang]
-                            try:
-                                print(f"[CASE-INSENSITIVE MATCH] {source_lang}->{target_lang}")
-                            except:
-                                pass
-                            return result
+                            if result and result.strip():  # Only return if result is not empty
+                                try:
+                                    print(f"[CASE-INSENSITIVE MATCH] {source_lang}->{target_lang}")
+                                except:
+                                    pass
+                                return result
         
         # ========== STEP 2: Try transitive translation (source -> English -> target) ==========
         if source_lang != 'english' and source_lang in self.translation_db:
@@ -266,11 +269,12 @@ class TranslationService:
                         english_entry = self.translation_db['english'][english_lower]
                         if target_lang in english_entry:
                             result = english_entry[target_lang]
-                            try:
-                                print(f"[TRANSITIVE] {source_lang}->{target_lang} via english")
-                            except:
-                                pass
-                            return result
+                            if result and result.strip():  # Only return if result is not empty
+                                try:
+                                    print(f"[TRANSITIVE] {source_lang}->{target_lang} via english")
+                                except:
+                                    pass
+                                return result
         
         # ========== STEP 3: Try partial/fuzzy match ==========
         if source_lang in self.translation_db:
@@ -284,11 +288,12 @@ class TranslationService:
                 if source_lang == 'english':
                     if target_lang in match_entry:
                         result = match_entry[target_lang]
-                        try:
-                            print(f"[PARTIAL MATCH] {source_lang}->{target_lang} (score: {score:.2f})")
-                        except:
-                            pass
-                        return result
+                        if result and result.strip():  # Only return if result is not empty
+                            try:
+                                print(f"[PARTIAL MATCH] {source_lang}->{target_lang} (score: {score:.2f})")
+                            except:
+                                pass
+                            return result
                 else:
                     # For Bodo/Mizo, try transitive through English
                     if 'english' in match_entry and match_entry['english']:
@@ -298,11 +303,12 @@ class TranslationService:
                             english_entry = self.translation_db['english'][english_lower]
                             if target_lang in english_entry:
                                 result = english_entry[target_lang]
-                                try:
-                                    print(f"[PARTIAL TRANSITIVE] {source_lang}->{target_lang} (score: {score:.2f})")
-                                except:
-                                    pass
-                                return result
+                                if result and result.strip():  # Only return if result is not empty
+                                    try:
+                                        print(f"[PARTIAL TRANSITIVE] {source_lang}->{target_lang} (score: {score:.2f})")
+                                    except:
+                                        pass
+                                    return result
         
         # ========== STEP 4: Word-by-word translation for English only ==========
         if source_lang == 'english':
@@ -318,8 +324,12 @@ class TranslationService:
                 if clean_word and clean_word in self.translation_db[source_lang]:
                     translation_entry = self.translation_db[source_lang][clean_word]
                     if target_lang in translation_entry:
-                        translated_words.append(translation_entry[target_lang])
-                        found_translations += 1
+                        trans_word = translation_entry[target_lang]
+                        if trans_word and trans_word.strip():  # Only use non-empty translations
+                            translated_words.append(trans_word)
+                            found_translations += 1
+                        else:
+                            translated_words.append(word)
                     else:
                         translated_words.append(word)
                 else:
